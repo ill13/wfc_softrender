@@ -139,41 +139,93 @@
                         ctx.fill();
                     }
                 } else if (biome === "mountain") {
-                    /// Mountain-like inverted V's
                     for (let i = 0; i < 3; i++) {
-                        const dy = 10 + i * 15;
-                        ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`; // Matching gray
+                        const dy = 16 + i * 15;
+
+                        ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
                         ctx.lineWidth = 2;
+
+                        // --- Independent random start and end for this line ---
+                        const startX = x + 3 + Math.random() * 9; // x + 3  to x + 12
+                        const endX = x + 28 + Math.random() * 15; // x + 28 to x + 43
+
+                        // Ensure startX < endX (should always be true, but just in case)
+                        if (startX >= endX) continue; // Safety check (extremely unlikely)
+
                         ctx.beginPath();
-                        ctx.moveTo(x + 7, y + dy);
+                        ctx.moveTo(startX, y + dy);
 
-                        // Create a center dip (inverted V peak)
-                        const midX = cx;
-                        const depth = 8 + Math.random() * 8; // Vary depth for uneven peaks
-                        const offset = Math.random() * 10 - 5; // Wobble the center point
+                        // Random peak: depth and horizontal offset
+                        const midX = (startX + endX) / 2;
+                        const depth = 8 + Math.random() * 8; // 8–16 px deep
+                        const peakOffset = Math.random() * 10 - 5; // ±5 px shift
 
-                        ctx.lineTo(midX + offset, y + dy - depth); // Sharp dip down (inverted peak)
-                        ctx.lineTo(x + 32, y + dy); // Back up to end
+                        ctx.lineTo(midX + peakOffset, y + dy - depth);
+                        ctx.lineTo(endX, y + dy);
                         ctx.stroke();
                     }
                 } else if (biome === "cursed") {
                     // Spiky red marks
                     for (let i = 0; i < 7; i++) {
-                        const rx = cx + noise(-16, 16);
-                        const ry = cy + noise(-16, 16);
+                        const rx = cx + noise(-24, 24);
+                        const ry = cy + noise(-24, 24);
+
+                        ctx.save(); // Save current state
+                        ctx.translate(rx, ry); // Move origin to the shape center
+                        ctx.rotate(noise(0, Math.PI * 2)); // Random rotation
                         ctx.fillStyle = `rgba(160, 30, 60, 0.3)`;
                         ctx.beginPath();
-                        ctx.moveTo(rx, ry);
+                        ctx.moveTo(0, 0); // Now relative to (rx, ry) due to translate
                         // Make a jagged triangle spike
                         for (let j = 0; j < 5; j++) {
                             const angle = (Math.PI * 2 * j) / 5;
                             const len = 4 + noise(0, 8); // Highly irregular radius → spiky
-                            const x = rx + Math.cos(angle) * len;
-                            const y = ry + Math.sin(angle) * len;
+                            const x = Math.cos(angle) * len;
+                            const y = Math.sin(angle) * len;
                             ctx.lineTo(x, y);
                         }
                         ctx.closePath();
                         ctx.fill();
+                        ctx.restore(); // Restore original state
+                    }
+                } else if (biome === "plains") {
+                    // Shared wind lean for this group of blades (simulates wind direction)
+                    const windLean = Math.random() * 10 - 5; // e.g., -10 to +10 pixels of lean
+
+                    for (let i = 0; i < 7; i++) {
+                        const dx = 10 + i * 15; // Horizontal offset
+
+                        ctx.strokeStyle = `rgba(60, 130, 60, ${0.4 + Math.random() * 0.3})`;
+                        ctx.lineWidth = 0.5;
+
+                        // Random starting Y within the 43px height box (slightly less to avoid overflow)
+                        const startY = y + Math.random() * 38;
+
+                        // Random line length between 8 and 24
+                        const length = 2 + Math.random() * 7;
+
+                        // End Y is startY + length (going downward)
+                        const endY = startY + length;
+
+                        // Control point Y around the middle of the blade
+                        const controlY = startY + length / 2;
+
+                        // Small per-blade wobble
+                        const amp = Math.random() * 4 - 2; // Local X variation
+                        const offset = Math.random() * 4 - 2; // Local control point Y jitter
+
+                        ctx.beginPath();
+                        ctx.moveTo(x + dx, startY);
+
+                        // Apply shared wind lean to the control point and end point
+                        // The farther down the blade, the more it leans
+                        ctx.quadraticCurveTo(
+                            x + dx + windLean + amp, // Base lean + small wobble
+                            controlY + offset, // Slight vertical jitter
+                            x + dx + windLean, // End point leans with the wind
+                            endY
+                        );
+                        ctx.stroke();
                     }
                 }
             }
