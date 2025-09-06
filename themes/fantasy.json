@@ -4,7 +4,7 @@
   "elevation": {
     "spire": {
       "label": "Ancient Peaks",
-      "colors": ["#777", "#4B5563", "#6B7280"],
+      "colors": ["#333333", "#4B5563", "#6B7280"],
       "weight": 12,
       "adjacent": ["forest", "barrens"]
     },

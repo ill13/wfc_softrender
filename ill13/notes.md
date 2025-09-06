@@ -12,7 +12,7 @@ Attached is some WFC map generation demo code we are working on. Everything seem
 
 
 
-
+The CSS for the blob's canvas needs to be "position: fixed;". Don't set top : 0;, left :0; Trust me on this, it just doesn't work 
 
 
 

@@ -56,7 +56,8 @@
     "texttones",
     "ill13",
     "tmp",
-    "wfc"
+    "wfc",
+    "softrender"
   ],
   "backend_extensions": [
     "py",

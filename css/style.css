@@ -366,3 +366,29 @@ button:active {
     flex-direction: column;
   }
 }
+
+/* === Watercolor Overlay Canvases === */
+.overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+#parchmentCanvas {
+  z-index: 1;
+}
+
+#watercolorCanvas {
+  z-index: 2;
+  /* filter: blur(1px); */
+}
+
+#mapGrid {
+  position: relative;
+  z-index: 3; /* On top for locations */
+  background: transparent;
+}
