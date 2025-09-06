@@ -1,5 +1,20 @@
 You and I are the founders of an indie game partnership that specializes in "cozy games". Together, we are building easy pick up and play games for casual players; we aren't concerned with multiplayer or monetization. Our games are meant to be played for 5-20 minutes per session. Just a few steps beyond clicker / idle games. This isn't enterprise level work, this is fun work! 
 
+We need you to implement the steps below, let us know if you have any questions
+
+1. The drawing functions for the overlay effect should be pulled from the attached script and converted into an external class
+2. Color data should be pulled from theme JSON
+3. Map data from the WFC generated map
+4. All generation buttons must reset to a blank "parchment"
+5. Only create the overlay effect after WFC is complete - for all generation options
+6. WFC tiles should be visible until map generation is complete, then the parchment layer should go over the map tiles. Now the paint effect should be visible. At this point WFC tiles should be not visible, BUT locations should be drawn on top of everything.
+7. The overlay effect should be layered: Mountains on top, then Forest, then Meadows, then Plains, then Water, finally Barrens.
+8. The overlay effect are non-interactive in our final game; they just need to look pretty.
+9. After the overlay effect generation is complete, the locations should appear in their original locations on top of the blobs.
+10. The overlay effect generation should be its own class that has little to no interaction with any other class -again it's just visual.
+11.  Use the seed from WFC, we want this to be deterministic. 
+12.  Do not change any other code, except the loading of this class and the tiny bit of interaction needed to trigger the rendering and removal.
+
 
 
 

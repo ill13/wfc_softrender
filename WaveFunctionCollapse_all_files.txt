@@ -1,373 +1,134 @@
 All files from 'WaveFunctionCollapse'
-Generated: 2025-09-06 01:27:44
+Generated: 2025-09-06 15:48:17
 Mode: all
-Included extensions: png, jsx, txt, jpeg, svg, toml, sass, tsx, py, bmp, gif, ts, json, html, jpg, webp, css, ini, scss, cfg, yaml, yml, tiff, less, vue, js
+Included extensions: json, ini, tiff, js, toml, tsx, webp, jpg, less, scss, yml, gif, jsx, bmp, css, cfg, yaml, svg, sass, png, vue, ts, html, py, jpeg, txt
 Tiktoken available: True
 Encoding: cl100k_base
 ==================================================
 
 ==================================================
 FILE: index.html
-MODIFIED: 2025-09-06 00:41:53
-TOKENS: [92m1,093[0m
+MODIFIED: 2025-09-05 16:44:55
+TOKENS: [92m1,038[0m
 ==================================================
 
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Wave Function Collapse - Smart Location Placement</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <div class="container">
-            <!-- Header -->
-            <header class="header">
-                <h1>Wave Function Collapse Map</h1>
-                <p>Smart Locations + Data-Driven Terrain</p>
-            </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wave Function Collapse - Smart Location Placement</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <h1>Wave Function Collapse Map</h1>
+        <p>Smart Locations + Data-Driven Terrain</p>
+      </header>
 
-            <!-- Controls -->
-
-            <div class="controls">
-                <!-- Map Name and Generate Buttons -->
-                <div class="top-controls">
-                    <div class="map-name-group">
-                        <!-- <label for="mapNameInput">Map Name</label> -->
-                        <div class="input-with-copy">
-                            <input type="text" id="mapNameInput" class="input-text" placeholder="A Mysterious Place" />
-                            <button id="copyMapNameBtn" title="Copy map name" aria-label="Copy name">📋</button>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button id="generateBtn">Generate New World</button>
-                        <button id="stepBtn">Step Forward</button>
-                        <button id="autoBtn">Auto Generate</button>
-                        <button id="resetBtn">Reset</button>
-                    </div>
-                </div>
-
-                <!-- Grid Size moved to sidebar -->
+      <!-- Controls -->
+      
+      <div class="controls">
+        <!-- Map Name and Generate Buttons -->
+        <div class="top-controls">
+          <div class="map-name-group">
+            <!-- <label for="mapNameInput">Map Name</label> -->
+            <div class="input-with-copy">
+              <input type="text" id="mapNameInput" class="input-text" placeholder="A Mysterious Place" />
+              <button id="copyMapNameBtn" title="Copy map name" aria-label="Copy name">📋</button>
             </div>
+          </div>
 
-            <!-- Main Content -->
-            <div class="main-content">
-                <!-- With this: -->
-                <div class="map-area">
-                    <canvas id="parchmentCanvas" class="overlay-canvas"></canvas>
-                    <canvas id="watercolorCanvas" class="overlay-canvas"></canvas>
-                    <div id="mapGrid" class="map-grid"></div>
-                </div>
-
-                <aside class="sidebar">
-                    <div class="info-section">
-                        <h3>Theme</h3>
-                        <select id="themeSelect">
-                            <option value="fantasy">🏰 Fantasy</option>
-                            <option value="cyberpunk">🌃 Cyberpunk</option>
-                            <option value="modern">🚲 Modern</option>
-                        </select>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Grid Size</h3>
-                        <div class="grid-size">
-                            <input type="number" id="gridWidth" value="8" min="4" max="24" />
-                            <span>×</span>
-                            <input type="number" id="gridHeight" value="8" min="4" max="24" />
-                        </div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Progress</h3>
-                        <div class="progress-bar-container">
-                            <div id="progressBar" class="progress-bar">0%</div>
-                        </div>
-                        <div class="speed-controls">
-                            <button id="slowBtn">Slow</button>
-                            <button id="normalBtn">Normal</button>
-                            <button id="fastBtn">Fast</button>
-                        </div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Terrain Legend</h3>
-                        <div id="legend" class="legend"></div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Statistics</h3>
-                        <div class="stats">
-                            <div class="stat"><span>Steps:</span> <span id="stepCount">0</span></div>
-                            <div class="stat"><span>Locations:</span> <span id="locationCount">0</span></div>
-                            <div class="stat"><span>Entropy:</span> <span id="entropyCount">0</span></div>
-                            <div class="stat"><span>Collapsed:</span> <span id="collapsedCount">0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Log</h3>
-                        <div id="log" class="log"></div>
-                    </div>
-                </aside>
-            </div>
+          <div class="button-group">
+            <button id="generateBtn">Generate New World</button>
+            <button id="stepBtn">Step Forward</button>
+            <button id="autoBtn">Auto Generate</button>
+            <button id="resetBtn">Reset</button>
+          </div>
         </div>
 
-        <!-- Scripts -->
-        <script async src="https://stats.ill13.com/script.js" data-website-id="acd6458a-bc5c-4a87-92a2-4ca46d461135"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
-        <script src="js/loader.js"></script>
-        <script src="js/themeManager.js"></script>
-        <script src="js/classes/MapNamer.js"></script>
-        <script src="js/classes/WaveFunctionCollapse.js"></script>
-        <script src="js/classes/WatercolorOverlay.js"></script>
-        <script src="js/TemplatePlacer.js"></script>
-        <script src="js/main.js"></script>
-    </body>
+        <!-- Grid Size moved to sidebar -->
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="map-area">
+          <div id="mapGrid" class="map-grid"></div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="info-section">
+            <h3>Theme</h3>
+            <select id="themeSelect">
+              <option value="fantasy">🏰 Fantasy</option>
+              <option value="cyberpunk">🌃 Cyberpunk</option>
+              <option value="modern">🚲 Modern</option>
+            </select>
+          </div>
+
+          <div class="info-section">
+            <h3>Grid Size</h3>
+            <div class="grid-size">
+              <input type="number" id="gridWidth" value="8" min="4" max="24" />
+              <span>×</span>
+              <input type="number" id="gridHeight" value="8" min="4" max="24" />
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h3>Progress</h3>
+            <div class="progress-bar-container">
+              <div id="progressBar" class="progress-bar">0%</div>
+            </div>
+            <div class="speed-controls">
+              <button id="slowBtn">Slow</button>
+              <button id="normalBtn">Normal</button>
+              <button id="fastBtn">Fast</button>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h3>Terrain Legend</h3>
+            <div id="legend" class="legend"></div>
+          </div>
+
+          <div class="info-section">
+            <h3>Statistics</h3>
+            <div class="stats">
+              <div class="stat"><span>Steps:</span> <span id="stepCount">0</span></div>
+              <div class="stat"><span>Locations:</span> <span id="locationCount">0</span></div>
+              <div class="stat"><span>Entropy:</span> <span id="entropyCount">0</span></div>
+              <div class="stat"><span>Collapsed:</span> <span id="collapsedCount">0</span></div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h3>Log</h3>
+            <div id="log" class="log"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script async src="https://stats.ill13.com/script.js" data-website-id="acd6458a-bc5c-4a87-92a2-4ca46d461135"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script src="js/loader.js"></script>
+    <script src="js/themeManager.js"></script>
+    <script src="js/classes/MapNamer.js"></script>
+    <script src="js/classes/WaveFunctionCollapse.js"></script>
+    <script src="js/TemplatePlacer.js"></script>
+    <script src="js/main.js"></script>
+  </body>
 </html>
 
-
-==================================================
-FILE: wc.html
-MODIFIED: 2025-09-06 00:16:27
-TOKENS: [92m1,775[0m
-==================================================
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Watercolor Map Overlay - Vanilla JS</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #eee;
-      font-family: 'Consolas', monospace;
-    }
-    canvas {
-      display: block;
-      background: #f0f0f0;
-    }
-    .controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 10px;
-      background: rgba(255,255,255,0.9);
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .palette {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .color-swatch {
-      width: 30px;
-      height: 30px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: transform 0.1s ease;
-    }
-    .color-swatch:hover {
-      transform: scale(1.1);
-    }
-    .color-swatch.active {
-      border: 2px solid #000;
-      transform: scale(1.1);
-    }
-  </style>
-</head>
-<body>
-
-  <div class="controls">
-    <h3>Colors</h3>
-    <div class="palette" id="palette"></div>
-  </div>
-
-  <canvas id="canvas"></canvas>
-
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const paletteEl = document.getElementById('palette');
-
-    // Set canvas size
-    function resizeCanvas() {
-      canvas.width = window.innerWidth * 0.9;
-      canvas.height = window.innerHeight * 0.8;
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    // Fantasy theme colors (from fantasy.json)
-    const FANTASY_COLORS = [
-      { name: "Forest", hex: "#16A34A" },
-      { name: "Meadow", hex: "#A3E635" },
-      { name: "Water", hex: "#1D4ED8" },
-      { name: "Barrens", hex: "#C2410C" },
-      { name: "Spire", hex: "#777" }
-    ];
-
-    // Initialize color palette
-    FANTASY_COLORS.forEach(color => {
-      const swatch = document.createElement('div');
-      swatch.className = 'color-swatch';
-      swatch.style.backgroundColor = color.hex;
-      swatch.dataset.hex = color.hex;
-      swatch.title = color.name;
-      swatch.addEventListener('click', () => {
-        selectedColor = color.hex;
-        swatch.classList.add('active');
-        document.querySelectorAll('.color-swatch').forEach(el => {
-          if (el !== swatch) el.classList.remove('active');
-        });
-      });
-      paletteEl.appendChild(swatch);
-    });
-
-    let selectedColor = FANTASY_COLORS[0].hex;
-
-    // Draw parchment texture (base layer)
-    function drawParchmentTexture() {
-      const w = canvas.width;
-      const h = canvas.height;
-      const imageData = ctx.createImageData(w, h);
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const value = 245 + Math.random() * 10;
-        const tint = Math.random() > 0.9 ? 10 : 0;
-        imageData.data[i] = value + tint; // R
-        imageData.data[i + 1] = value - 10 + tint; // G
-        imageData.data[i + 2] = value - 30; // B
-        imageData.data[i + 3] = 255; // A
-      }
-      ctx.putImageData(imageData, 0, 0);
-
-      // Lighten base with screen blend
-      ctx.globalCompositeOperation = "screen";
-      ctx.fillStyle = "rgba(255, 255, 220, 0.1)";
-      ctx.fillRect(0, 0, w, h);
-      ctx.globalCompositeOperation = "source-over"; // Reset
-    }
-
-    // Draw grain (paper texture)
-    function drawGrain(cx, cy, size, color, alpha) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = color;
-      for (let i = 0; i < 6; i++) {
-        const rx = cx - size / 2 + Math.random() * size;
-        const ry = cy - size / 2 + Math.random() * size;
-        ctx.fillRect(rx, ry, 1, 1);
-      }
-      ctx.restore();
-    }
-
-    // Draw fluffy blob (soft, blurred-like effect)
-    function drawFluffyBlob(x, y, rgb, size = 40) {
-      ctx.save();
-      const angle = Math.random() * Math.PI * 2;
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-
-      const numLayers = 8;
-      const maxRadius = size * 1.2;
-
-      for (let i = 0; i < numLayers; i++) {
-        const r = maxRadius * (i / numLayers);
-        const opacity = 0.15 - (i * 0.015); // Fade out
-        const jitterX = Math.random() * 15 - 7.5;
-        const jitterY = Math.random() * 15 - 7.5;
-
-        const some_num = 10
-        ctx.fillStyle = `rgba(${rgb.r + noise(-some_num,some_num)}, ${rgb.g + noise(-some_num,some_num)}, ${rgb.b + noise(-some_num,some_num)}, ${opacity})`;
-
-        ctx.beginPath();
-        ctx.arc(jitterX, jitterY, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-
-    // Helper: random with range
-    function noise(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    // Convert hex to RGB
-    function hexToRgb(hex) {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return { r, g, b };
-    }
-
-    // Mouse interaction
-    let isDrawing = false;
-    let lastX, lastY;
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseleave', stopDrawing);
-
-    function startDrawing(e) {
-      isDrawing = true;
-      [lastX, lastY] = [e.offsetX, e.offsetY];
-    }
-
-    function draw(e) {
-      if (!isDrawing) return;
-
-      const x = e.offsetX;
-      const y = e.offsetY;
-
-      // Only draw every 100ms
-      if (Date.now() - lastDrawTime < 50) return;
-      lastDrawTime = Date.now();
-
-      const rgb = hexToRgb(selectedColor);
-      drawFluffyBlob(x, y, rgb, 25);
-    }
-
-    function stopDrawing() {
-      isDrawing = false;
-    }
-
-    // Initial setup
-    let lastDrawTime = 0;
-
-    // Draw parchment background once
-    drawParchmentTexture();
-
-    // Add grain texture (optional)
-    for (let i = 0; i < 100; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      drawGrain(x, y, 10, '#333', 0.05);
-    }
-
-    // Optional: Add subtle vignette
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  </script>
-
-</body>
-</html>
 
 ==================================================
 FILE: css\style.css
-MODIFIED: 2025-09-06 01:08:46
-TOKENS: [92m2,117[0m
+MODIFIED: 2025-09-05 16:47:29
+TOKENS: [92m1,996[0m
 ==================================================
 
 /* === Global Styles === */
@@ -739,31 +500,6 @@ button:active {
   }
 }
 
-/* === Watercolor Overlay Canvases === */
-.overlay-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  pointer-events: none;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-#parchmentCanvas {
-  z-index: 1;
-}
-
-#watercolorCanvas {
-  z-index: 2;
-}
-
-#mapGrid {
-  position: relative;
-  z-index: 3; /* On top for locations */
-  background: transparent;
-}
-
 ==================================================
 FILE: js\loader.js
 MODIFIED: 2025-09-04 15:33:54
@@ -799,148 +535,120 @@ class DataLoader {
 
 ==================================================
 FILE: js\main.js
-MODIFIED: 2025-09-06 01:23:38
-TOKENS: [92m1,144[0m
+MODIFIED: 2025-09-05 15:57:21
+TOKENS: [92m857[0m
 ==================================================
 
 // js/main.js
 let TERRAIN_TYPES, LOCATIONS;
 let wfc;
-let watercolorOverlay = null;
 
 async function initApp() {
+  const themeName = document.getElementById("themeSelect").value;
+  const data = await DataLoader.loadTheme(themeName);
+  TERRAIN_TYPES = data.TERRAIN_TYPES;
+  LOCATIONS = data.LOCATIONS;
+  ThemeManager.setTheme(themeName);
+
+  const width = parseInt(document.getElementById("gridWidth").value);
+  const height = parseInt(document.getElementById("gridHeight").value);
+  wfc = new WaveFunctionCollapse(width, height, themeName);
+  updateLegend();
+  setupEventListeners();
+  wfc.updateUI();
+}
+
+function updateLegend() {
+  const legendEl = document.getElementById("legend");
+  legendEl.innerHTML = "";
+  const theme = ThemeManager.current;
+  Object.keys(theme.elevation).forEach(type => {
+    const visual = theme.elevation[type];
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    const tile = document.createElement("div");
+    tile.className = "legend-tile";
+    tile.style.backgroundColor = visual.colors[0];
+    const label = document.createElement("span");
+    label.textContent = visual.label;
+    item.appendChild(tile);
+    item.appendChild(label);
+    legendEl.appendChild(item);
+  });
+}
+
+function setupEventListeners() {
+
+// Copy Map Name Button
+document.getElementById("copyMapNameBtn").addEventListener("click", () => {
+  const input = document.getElementById("mapNameInput");
+  const text = input.value || input.placeholder;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copyMapNameBtn");
+    const original = btn.textContent;
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => btn.textContent = original, 2000);
+  }).catch(err => {
+    console.warn("Copy failed:", err);
+    alert("Could not copy to clipboard: " + err);
+  });
+});
+
+
+  document.getElementById("generateBtn").addEventListener("click", () => {
+    const w = parseInt(document.getElementById("gridWidth").value);
+    const h = parseInt(document.getElementById("gridHeight").value);
+    const themeName = document.getElementById("themeSelect").value;
+    wfc = new WaveFunctionCollapse(w, h, themeName);
+    wfc.autoGenerate();
+  });
+
+  document.getElementById("stepBtn").addEventListener("click", () => {
+    if (!wfc.isGenerating) wfc.step();
+  });
+
+  document.getElementById("autoBtn").addEventListener("click", () => {
+    const btn = document.getElementById("autoBtn");
+    if (wfc.isGenerating) {
+      wfc.isGenerating = false;
+      btn.textContent = "Auto Generate";
+    } else {
+      btn.textContent = "Auto Step";
+      wfc.autoGenerate();
+    }
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    const w = parseInt(document.getElementById("gridWidth").value);
+    const h = parseInt(document.getElementById("gridHeight").value);
+    const themeName = document.getElementById("themeSelect").value;
+    wfc = new WaveFunctionCollapse(w, h, themeName);
+    document.getElementById("autoBtn").textContent = "Auto Generate";
+  });
+
+  document.getElementById("slowBtn").addEventListener("click", () => wfc.autoSpeed = 300);
+  document.getElementById("normalBtn").addEventListener("click", () => wfc.autoSpeed = 100);
+  document.getElementById("fastBtn").addEventListener("click", () => wfc.autoSpeed = 30);
+
+  document.getElementById("themeSelect").addEventListener("change", async () => {
     const themeName = document.getElementById("themeSelect").value;
     const data = await DataLoader.loadTheme(themeName);
     TERRAIN_TYPES = data.TERRAIN_TYPES;
     LOCATIONS = data.LOCATIONS;
     ThemeManager.setTheme(themeName);
-
-    const width = parseInt(document.getElementById("gridWidth").value);
-    const height = parseInt(document.getElementById("gridHeight").value);
-    wfc = new WaveFunctionCollapse(width, height, themeName);
-    const mapArea = document.querySelector(".map-area");
-    const tileSize = Math.min(48, 600 / Math.max(wfc.width, height));
-    watercolorOverlay = new WatercolorOverlay(mapArea, wfc.width, wfc.height, tileSize, MapNamer.stringToSeed(wfc.mapName));
-
-    updateLegend();
-    setupEventListeners();
+    const w = parseInt(document.getElementById("gridWidth").value);
+    const h = parseInt(document.getElementById("gridHeight").value);
+    wfc = new WaveFunctionCollapse(w, h, themeName);
     wfc.updateUI();
-}
-
-function updateLegend() {
-    const legendEl = document.getElementById("legend");
-    legendEl.innerHTML = "";
-    const theme = ThemeManager.current;
-    Object.keys(theme.elevation).forEach((type) => {
-        const visual = theme.elevation[type];
-        const item = document.createElement("div");
-        item.className = "legend-item";
-        const tile = document.createElement("div");
-        tile.className = "legend-tile";
-        tile.style.backgroundColor = visual.colors[0];
-        const label = document.createElement("span");
-        label.textContent = visual.label;
-        item.appendChild(tile);
-        item.appendChild(label);
-        legendEl.appendChild(item);
-    });
-}
-
-function setupEventListeners() {
-    // Copy Map Name Button
-    document.getElementById("copyMapNameBtn").addEventListener("click", () => {
-        const input = document.getElementById("mapNameInput");
-        const text = input.value || input.placeholder;
-
-        navigator.clipboard
-            .writeText(text)
-            .then(() => {
-                const btn = document.getElementById("copyMapNameBtn");
-                const original = btn.textContent;
-                btn.textContent = "✅ Copied!";
-                setTimeout(() => (btn.textContent = original), 2000);
-            })
-            .catch((err) => {
-                console.warn("Copy failed:", err);
-                alert("Could not copy to clipboard: " + err);
-            });
-    });
-
-    document.getElementById("generateBtn").addEventListener("click", () => {
-        const w = parseInt(document.getElementById("gridWidth").value);
-        const h = parseInt(document.getElementById("gridHeight").value);
-        const themeName = document.getElementById("themeSelect").value;
-        // Clear old overlay
-        if (window.watercolorOverlay) {
-            window.watercolorOverlay.clear();
-        }
-        wfc = new WaveFunctionCollapse(w, h, themeName);
-
-        // Then create new one after wfc
-        const mapArea = document.querySelector(".map-area");
-        const tileSize = Math.min(48, 600 / Math.max(w, h));
-        const seed = MapNamer.stringToSeed(wfc.mapName);
-        window.watercolorOverlay = new WatercolorOverlay(mapArea, w, h, tileSize, seed);
-
-        wfc.autoGenerate();
-    });
-
-    document.getElementById("stepBtn").addEventListener("click", () => {
-        if (!wfc.isGenerating) wfc.step();
-    });
-
-    document.getElementById("autoBtn").addEventListener("click", () => {
-        const btn = document.getElementById("autoBtn");
-        if (wfc.isGenerating) {
-            wfc.isGenerating = false;
-            btn.textContent = "Auto Generate";
-        } else {
-            btn.textContent = "Auto Step";
-            wfc.autoGenerate();
-        }
-    });
-
-    document.getElementById("resetBtn").addEventListener("click", () => {
-        const w = parseInt(document.getElementById("gridWidth").value);
-        const h = parseInt(document.getElementById("gridHeight").value);
-        const themeName = document.getElementById("themeSelect").value;
-        // Clear old overlay
-        if (window.watercolorOverlay) {
-            window.watercolorOverlay.clear();
-        }
-        wfc = new WaveFunctionCollapse(w, h, themeName);
-        // Then create new one after wfc
-        const mapArea = document.querySelector(".map-area");
-        const tileSize = Math.min(48, 600 / Math.max(w, h));
-        const seed = MapNamer.stringToSeed(wfc.mapName);
-        window.watercolorOverlay = new WatercolorOverlay(mapArea, w, h, tileSize, seed);
-
-        document.getElementById("autoBtn").textContent = "Auto Generate";
-    });
-
-    document.getElementById("slowBtn").addEventListener("click", () => (wfc.autoSpeed = 300));
-    document.getElementById("normalBtn").addEventListener("click", () => (wfc.autoSpeed = 100));
-    document.getElementById("fastBtn").addEventListener("click", () => (wfc.autoSpeed = 30));
-
-    document.getElementById("themeSelect").addEventListener("change", async () => {
-        const themeName = document.getElementById("themeSelect").value;
-        const data = await DataLoader.loadTheme(themeName);
-        TERRAIN_TYPES = data.TERRAIN_TYPES;
-        LOCATIONS = data.LOCATIONS;
-        ThemeManager.setTheme(themeName);
-        const w = parseInt(document.getElementById("gridWidth").value);
-        const h = parseInt(document.getElementById("gridHeight").value);
-        wfc = new WaveFunctionCollapse(w, h, themeName);
-        wfc.updateUI();
-    });
+  });
 }
 
 // Start
 document.addEventListener("DOMContentLoaded", async () => {
-    await ThemeManager.loadThemes();
-    initApp();
+  await ThemeManager.loadThemes();
+  initApp();
 });
-
 
 ==================================================
 FILE: js\TemplatePlacer.js
@@ -1198,663 +906,403 @@ static generate(wfc) {
 }
 
 ==================================================
-FILE: js\classes\WatercolorOverlay.js
-MODIFIED: 2025-09-06 01:06:15
-TOKENS: [92m1,664[0m
-==================================================
-
-// js/classes/WatercolorOverlay.js
-class WatercolorOverlay {
-    constructor(mapArea, width, height, tileSize, seed) {
-        this.mapArea = mapArea;
-        this.width = width;
-        this.height = height;
-        this.tileSize = tileSize;
-        this.seed = seed;
-
-        // Create contexts
-        this.parchmentCanvas = document.getElementById("parchmentCanvas");
-        this.watercolorCanvas = document.getElementById("watercolorCanvas");
-
-        if (!this.parchmentCanvas || !this.watercolorCanvas) {
-            console.warn("Canvases not found. Skipping watercolor overlay.");
-            return;
-        }
-
-        this.parchmentCtx = this.parchmentCanvas.getContext("2d");
-        this.ctx = this.watercolorCanvas.getContext("2d");
-
-        this.resize();
-        window.addEventListener("resize", () => this.resize());
-
-        // Draw parchment once
-        this.drawParchment();
-    }
-
-    resize() {
-        const rect = this.mapArea.getBoundingClientRect();
-        const scale = window.devicePixelRatio || 1;
-
-        this.parchmentCanvas.width = rect.width * scale;
-        this.parchmentCanvas.height = rect.height * scale;
-        this.watercolorCanvas.width = rect.width * scale;
-        this.watercolorCanvas.height = rect.height * scale;
-
-        this.parchmentCanvas.style.width = `${rect.width}px`;
-        this.parchmentCanvas.style.height = `${rect.height}px`;
-        this.watercolorCanvas.style.width = `${rect.width}px`;
-        this.watercolorCanvas.style.height = `${rect.height}px`;
-
-        this.parchmentCtx.scale(scale, scale);
-        this.ctx.scale(scale, scale);
-    }
-
-    drawParchment() {
-        const w = this.parchmentCanvas.width / (window.devicePixelRatio || 1);
-        const h = this.parchmentCanvas.height / (window.devicePixelRatio || 1);
-        const imageData = this.parchmentCtx.createImageData(w, h);
-        for (let i = 0; i < imageData.data.length; i += 4) {
-            const value = 245 + Math.random() * 10;
-            const tint = Math.random() > 0.9 ? 10 : 0;
-            imageData.data[i] = value + tint; // R
-            imageData.data[i + 1] = value - 10 + tint; // G
-            imageData.data[i + 2] = value - 30; // B
-            imageData.data[i + 3] = 255; // A
-        }
-        this.parchmentCtx.putImageData(imageData, 0, 0);
-
-        // Lighten with screen blend
-        this.parchmentCtx.globalCompositeOperation = "screen";
-        this.parchmentCtx.fillStyle = "rgba(255, 255, 220, 0.1)";
-        this.parchmentCtx.fillRect(0, 0, w, h);
-        this.parchmentCtx.globalCompositeOperation = "source-over";
-    }
-
-    drawGrain(x, y, size, color, alpha) {
-        this.ctx.save();
-        this.ctx.globalAlpha = alpha;
-        this.ctx.fillStyle = color;
-        for (let i = 0; i < 6; i++) {
-            const rx = x - size / 2 + Math.random() * size;
-            const ry = y - size / 2 + Math.random() * size;
-            this.ctx.fillRect(rx, ry, 1, 1);
-        }
-        this.ctx.restore();
-    }
-
-    drawFluffyBlob(x, y, rgb, size = 4) {
-        this.ctx.save();
-        const angle = Math.random() * Math.PI * 2;
-        this.ctx.translate(x, y);
-        this.ctx.rotate(angle);
-
-        const numLayers = 8;
-        const maxRadius = size * 1.2;
-
-        for (let i = 0; i < numLayers; i++) {
-            const r = maxRadius * (i / numLayers);
-            const opacity = 0.15 - i * 0.015;
-            const jitterX = Math.random() * 15 - 7.5;
-            const jitterY = Math.random() * 15 - 7.5;
-
-            const noise = (min, max) => Math.random() * (max - min) + min;
-            const some_num = 10;
-            this.ctx.fillStyle = `rgba(${rgb.r + noise(-some_num, some_num)}, ${rgb.g + noise(-some_num, some_num)}, ${rgb.b + noise(-some_num, some_num)}, ${opacity})`;
-
-            this.ctx.beginPath();
-            this.ctx.arc(jitterX, jitterY, r, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-
-        this.ctx.restore();
-    }
-
-    render(grid, theme) {
-        // Reset watercolor canvas
-        this.ctx.clearRect(0, 0, this.watercolorCanvas.width, this.watercolorCanvas.height);
-
-        // Use WFC seed for determinism
-        Math.seedrandom(this.seed);
-
-        // Define draw order: heaviest on top
-        const DRAW_ORDER = ["spire", "forest", "meadow", "barrens", "water"];
-
-        // Configurable density per terrain
-        const BLOB_DENSITY = {
-            spire: 0.7,
-            forest: 0.5,
-            meadow: 0.4,
-            barrens: 0.3,
-            water: 0.4,
-        };
-
-        const getBlobCount = (terrain) => {
-            return BLOB_DENSITY[terrain] || 0.3;
-        };
-
-        // For each terrain type, in draw order
-        for (const terrainType of DRAW_ORDER) {
-            const visual = theme.elevation[terrainType];
-            if (!visual) continue;
-
-            const baseColor = visual.colors[0];
-            const rgb = this.hexToRgb(baseColor);
-
-            for (let y = 0; y < this.height; y++) {
-                for (let x = 0; x < this.width; x++) {
-                    const cell = grid[y][x];
-                    if (cell.terrain !== terrainType) continue;
-
-                    if (Math.random() > getBlobCount(terrainType)) continue;
-
-                    const tileRect = this.getTileRect(x, y);
-                    const cx = tileRect.x + this.tileSize / 2;
-                    const cy = tileRect.y + this.tileSize / 2;
-
-                    // Blob size slightly larger than tile to bleed
-                   // const blobSize = this.tileSize * 1.8;
-                    const blobSize = this.tileSize * 0.8;
-                    this.drawFluffyBlob(cx, cy, rgb, blobSize);
-
-                    // Optional: Add subtle grain per blob
-                    // this.drawGrain(cx, cy, blobSize, `rgba(${rgb.r},${rgb.g},${rgb.b},0.1)`, 0.05);
-                }
-            }
-        }
-
-        // Restore global randomness
-        Math.seedrandom();
-
-        console.log("🎨 Watercolor overlay rendered");
-    }
-
-    getTileRect(x, y) {
-  const gridEl = document.getElementById("mapGrid");
-  const rect = gridEl.getBoundingClientRect();
-  const tileSize = this.tileSize;
-  return {
-    x: x * tileSize,
-    y: y * tileSize,
-    width: tileSize,
-    height: tileSize,
-  };
-}
-
-    hexToRgb(hex) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return { r, g, b };
-    }
-
-    clear() {
-        this.parchmentCtx.clearRect(0, 0, this.parchmentCanvas.width, this.parchmentCanvas.height);
-        this.ctx.clearRect(0, 0, this.watercolorCanvas.width, this.watercolorCanvas.height);
-    }
-}
-
-
-==================================================
 FILE: js\classes\WaveFunctionCollapse.js
-MODIFIED: 2025-09-06 01:27:35
-TOKENS: [92m3,225[0m
+MODIFIED: 2025-09-05 16:09:51
+TOKENS: [92m2,954[0m
 ==================================================
 
 // js/classes/WaveFunctionCollapse.js
 class WaveFunctionCollapse {
-  
-    constructor(width, height, themeName) {
-        this.width = width;
-        this.height = height;
-        this.themeName = themeName;
-        this.grid = [];
-        this.stepCount = 0;
-        this.locationCount = 0;
-        this.isGenerating = false;
-        this.autoSpeed = 0;
-        this.placedLocations = [];
-        this.mapName = "";
-        this.init();
-    }
+  constructor(width, height, themeName) {
+    this.width = width;
+    this.height = height;
+    this.themeName = themeName;
+    this.grid = [];
+    this.stepCount = 0;
+    this.locationCount = 0;
+    this.isGenerating = false;
+    this.autoSpeed = 0;
+    this.placedLocations = [];
+    this.mapName = "";
+    this.init();
+  }
 
-    init() {
-        this.grid = [];
-        this.stepCount = 0;
-        this.locationCount = 0;
-        this.placedLocations = [];
-        for (let y = 0; y < this.height; y++) {
-            this.grid[y] = [];
-            for (let x = 0; x < this.width; x++) {
-                this.grid[y][x] = {
-                    possibilities: Object.keys(TERRAIN_TYPES),
-                    collapsed: false,
-                    terrain: null,
-                    location: null,
-                };
-            }
-        }
-        this.log(`Initialized ${this.width}x${this.height} grid`);
-        this.updateUI();
+  init() {
+    this.grid = [];
+    this.stepCount = 0;
+    this.locationCount = 0;
+    this.placedLocations = [];
+    for (let y = 0; y < this.height; y++) {
+      this.grid[y] = [];
+      for (let x = 0; x < this.width; x++) {
+        this.grid[y][x] = {
+          possibilities: Object.keys(TERRAIN_TYPES),
+          collapsed: false,
+          terrain: null,
+          location: null,
+        };
+      }
     }
+    this.log(`Initialized ${this.width}x${this.height} grid`);
+    this.updateUI();
+  }
 
-    getCell(x, y) {
-        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return null;
-        return this.grid[y][x];
-    }
+  getCell(x, y) {
+    if (x < 0 || x >= this.width || y < 0 || y >= this.height) return null;
+    return this.grid[y][x];
+  }
 
-    getNeighbors(x, y) {
-        const directions = [
-            [-1, 0],
-            [1, 0],
-            [0, -1],
-            [0, 1],
-        ];
-        return directions.map(([dx, dy]) => ({ x: x + dx, y: y + dy, cell: this.getCell(x + dx, y + dy) })).filter((n) => n.cell);
-    }
+  getNeighbors(x, y) {
+    const directions = [[-1,0], [1,0], [0,-1], [0,1]];
+    return directions
+      .map(([dx, dy]) => ({ x: x + dx, y: y + dy, cell: this.getCell(x + dx, y + dy) }))
+      .filter(n => n.cell);
+  }
 
-    findLowestEntropy() {
-        let minEntropy = Infinity;
-        let candidates = [];
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                const cell = this.grid[y][x];
-                if (!cell.collapsed && cell.possibilities.length < minEntropy) {
-                    minEntropy = cell.possibilities.length;
-                    candidates = [{ x, y }];
-                } else if (!cell.collapsed && cell.possibilities.length === minEntropy) {
-                    candidates.push({ x, y });
-                }
-            }
-        }
-        return candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
-    }
-
-    collapseCell(x, y) {
+  findLowestEntropy() {
+    let minEntropy = Infinity;
+    let candidates = [];
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
         const cell = this.grid[y][x];
-        if (cell.collapsed) return false;
-
-        let weights = {};
-        for (const t of cell.possibilities) {
-            let weight = TERRAIN_TYPES[t].weight;
-            const neighborMatchCount = this.getNeighbors(x, y).filter((n) => n.cell.collapsed && n.cell.terrain === t).length;
-            weight *= Math.pow(1.7, neighborMatchCount);
-            weights[t] = weight;
+        if (!cell.collapsed && cell.possibilities.length < minEntropy) {
+          minEntropy = cell.possibilities.length;
+          candidates = [{ x, y }];
+        } else if (!cell.collapsed && cell.possibilities.length === minEntropy) {
+          candidates.push({ x, y });
         }
+      }
+    }
+    return candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+  }
 
-        const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
-        if (totalWeight === 0) return false;
+  collapseCell(x, y) {
+    const cell = this.grid[y][x];
+    if (cell.collapsed) return false;
 
-        let r = Math.random() * totalWeight;
-        let selected = cell.possibilities[0];
-        for (const t of cell.possibilities) {
-            r -= weights[t];
-            if (r <= 0) {
-                selected = t;
-                break;
-            }
-        }
-
-        const theme = ThemeManager.current;
-        const terrainVisual = theme.elevation[selected];
-        const chosenColor = ThemeManager.getRandomColor(terrainVisual.colors);
-
-        cell.terrain = selected;
-        cell.possibilities = [selected];
-        cell.collapsed = true;
-        cell.color = chosenColor;
-
-        this.log(`Collapsed (${x}, ${y}) → ${selected}`);
-        return true;
+    let weights = {};
+    for (const t of cell.possibilities) {
+      let weight = TERRAIN_TYPES[t].weight;
+      const neighborMatchCount = this.getNeighbors(x, y)
+        .filter(n => n.cell.collapsed && n.cell.terrain === t).length;
+      weight *= Math.pow(1.7, neighborMatchCount);
+      weights[t] = weight;
     }
 
-    propagate(x, y) {
-        const queue = [{ x, y }];
-        const processed = new Set();
-        while (queue.length > 0) {
-            const { x, y } = queue.shift();
-            const key = `${x},${y}`;
-            if (processed.has(key)) continue;
-            processed.add(key);
-            const neighbors = this.getNeighbors(x, y);
-            for (const { x: nx, y: ny, cell: neighbor } of neighbors) {
-                if (neighbor.collapsed) continue;
-                const valid = neighbor.possibilities.filter((p) => {
-                    const allowed = TERRAIN_TYPES[p].adjacent;
-                    return this.getNeighbors(nx, ny).some(({ cell: nn }) => (nn.collapsed ? allowed.includes(nn.terrain) : true));
-                });
-                if (valid.length !== neighbor.possibilities.length) {
-                    neighbor.possibilities = valid;
-                    if (valid.length === 0) {
-                        this.log(`Contradiction at (${nx}, ${ny})`);
-                        return false;
-                    }
-                    queue.push({ x: nx, y: ny });
-                }
-            }
-        }
-        return true;
+    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+    if (totalWeight === 0) return false;
+
+    let r = Math.random() * totalWeight;
+    let selected = cell.possibilities[0];
+    for (const t of cell.possibilities) {
+      r -= weights[t];
+      if (r <= 0) {
+        selected = t;
+        break;
+      }
     }
 
-    step() {
-        if (this.isComplete()) return false;
-        const cell = this.findLowestEntropy();
-        if (!cell) return false;
-        if (this.collapseCell(cell.x, cell.y)) {
-            if (!this.propagate(cell.x, cell.y)) {
-                this.log("Contradiction!");
-                return false;
-            }
-            this.stepCount++;
-            this.updateUI();
-            const el = document.querySelector(`[data-pos="${cell.x},${cell.y}"]`);
-            if (el) {
-                el.classList.add("collapsed");
-                setTimeout(() => el.classList.remove("collapsed"), 500);
-            }
-            return true;
-        }
-        return false;
-    }
+    const theme = ThemeManager.current;
+    const terrainVisual = theme.elevation[selected];
+    const chosenColor = ThemeManager.getRandomColor(terrainVisual.colors);
 
-    isComplete() {
-        return this.grid.flat().every((c) => c.collapsed);
-    }
+    cell.terrain = selected;
+    cell.possibilities = [selected];
+    cell.collapsed = true;
+    cell.color = chosenColor;
 
-    placeLocations() {
-        const cells = [];
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                if (!this.grid[y][x].location) {
-                    cells.push({ x, y });
-                }
-            }
-        }
+    this.log(`Collapsed (${x}, ${y}) → ${selected}`);
+    return true;
+  }
 
-        const sortedLocations = [...LOCATIONS].sort((a, b) => {
-            const countValid = (loc) => cells.filter((pos) => this.isValidLocationSpot(pos.x, pos.y, loc)).length;
-            return countValid(a) - countValid(b);
+  propagate(x, y) {
+    const queue = [{ x, y }];
+    const processed = new Set();
+    while (queue.length > 0) {
+      const { x, y } = queue.shift();
+      const key = `${x},${y}`;
+      if (processed.has(key)) continue;
+      processed.add(key);
+      const neighbors = this.getNeighbors(x, y);
+      for (const { x: nx, y: ny, cell: neighbor } of neighbors) {
+        if (neighbor.collapsed) continue;
+        const valid = neighbor.possibilities.filter((p) => {
+          const allowed = TERRAIN_TYPES[p].adjacent;
+          return this.getNeighbors(nx, ny).some(({ cell: nn }) => (nn.collapsed ? allowed.includes(nn.terrain) : true));
         });
-
-        for (const loc of sortedLocations) {
-            const validSpots = cells.filter((pos) => this.isValidLocationSpot(pos.x, pos.y, loc));
-            if (validSpots.length === 0) continue;
-            const pick = validSpots[Math.floor(Math.random() * validSpots.length)];
-            const { x, y } = pick;
-            this.grid[y][x].location = loc;
-            this.placedLocations.push({ x, y, loc });
-            this.locationCount++;
-            this.log(`📍 Placed ${loc.name} at (${x}, ${y})`);
-            const idx = cells.findIndex((c) => c.x === x && c.y === y);
-            if (idx !== -1) cells.splice(idx, 1);
+        if (valid.length !== neighbor.possibilities.length) {
+          neighbor.possibilities = valid;
+          if (valid.length === 0) {
+            this.log(`Contradiction at (${nx}, ${ny})`);
+            return false;
+          }
+          queue.push({ x: nx, y: ny });
         }
+      }
+    }
+    return true;
+  }
+
+  step() {
+    if (this.isComplete()) return false;
+    const cell = this.findLowestEntropy();
+    if (!cell) return false;
+    if (this.collapseCell(cell.x, cell.y)) {
+      if (!this.propagate(cell.x, cell.y)) {
+        this.log("Contradiction!");
+        return false;
+      }
+      this.stepCount++;
+      this.updateUI();
+      const el = document.querySelector(`[data-pos="${cell.x},${cell.y}"]`);
+      if (el) {
+        el.classList.add("collapsed");
+        setTimeout(() => el.classList.remove("collapsed"), 500);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  isComplete() {
+    return this.grid.flat().every(c => c.collapsed);
+  }
+
+  placeLocations() {
+    const cells = [];
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (!this.grid[y][x].location) {
+          cells.push({ x, y });
+        }
+      }
     }
 
-    isValidLocationSpot(x, y, location) {
-        const cell = this.grid[y][x];
-        if (cell.location) return false;
-        const terrain = cell.terrain;
-        const rules = location.rules;
+    const sortedLocations = [...LOCATIONS].sort((a, b) => {
+      const countValid = (loc) => cells.filter((pos) => this.isValidLocationSpot(pos.x, pos.y, loc)).length;
+      return countValid(a) - countValid(b);
+    });
 
-        if (rules.on && !rules.on.includes(terrain)) return false;
+    for (const loc of sortedLocations) {
+      const validSpots = cells.filter((pos) => this.isValidLocationSpot(pos.x, pos.y, loc));
+      if (validSpots.length === 0) continue;
+      const pick = validSpots[Math.floor(Math.random() * validSpots.length)];
+      const { x, y } = pick;
+      this.grid[y][x].location = loc;
+      this.placedLocations.push({ x, y, loc });
+      this.locationCount++;
+      this.log(`📍 Placed ${loc.name} at (${x}, ${y})`);
+      const idx = cells.findIndex(c => c.x === x && c.y === y);
+      if (idx !== -1) cells.splice(idx, 1);
+    }
+  }
 
-        if (rules.adjacent && rules.adjacent.length > 0) {
-            const neighborTerrains = this.getNeighbors(x, y)
-                .filter((n) => n.cell.collapsed)
-                .map((n) => n.cell.terrain);
-            const hasAllRequired = rules.adjacent.every((req) => neighborTerrains.includes(req));
-            if (!hasAllRequired) return false;
-        }
+  isValidLocationSpot(x, y, location) {
+    const cell = this.grid[y][x];
+    if (cell.location) return false;
+    const terrain = cell.terrain;
+    const rules = location.rules;
 
-        const tooClose = this.placedLocations.some((p) => Math.abs(x - p.x) + Math.abs(y - p.y) < 3);
-        if (tooClose) return false;
+    if (rules.on && !rules.on.includes(terrain)) return false;
 
-        return true;
+    if (rules.adjacent && rules.adjacent.length > 0) {
+      const neighborTerrains = this.getNeighbors(x, y)
+        .filter(n => n.cell.collapsed)
+        .map(n => n.cell.terrain);
+      const hasAllRequired = rules.adjacent.every(req => neighborTerrains.includes(req));
+      if (!hasAllRequired) return false;
     }
 
-    async autoGenerate() {
-        if (this.isGenerating) return;
+    const tooClose = this.placedLocations.some(p => Math.abs(x - p.x) + Math.abs(y - p.y) < 3);
+    if (tooClose) return false;
 
-        // Use manual name if provided, else generate
-        //const input = document.getElementById("mapNameInput");
-        // const userInput = input?.value.trim(); // Safe access
+    return true;
+  }
 
-        // Use manual name if provided, else generate
-        //this.mapName = userInput || MapNamer.generate(this);
+  async autoGenerate_old() {
+    if (this.isGenerating) return;
 
-        const input = document.getElementById("mapNameInput");
-        const userInput = input?.value.trim();
-        this.mapName = userInput || MapNamer.generate(this);
+    // Generate name → use as seed
+    this.mapName = MapNamer.generate(this);
+    const seedValue = MapNamer.stringToSeed(this.mapName);
+    Math.seedrandom?.(seedValue); // Requires seedrandom.js
 
-        const seedValue = MapNamer.stringToSeed(this.mapName);
-        Math.seedrandom?.(seedValue);
+    this.isGenerating = true;
+    this.init();
+    TemplatePlacer.applyTo(this);
 
-        this.isGenerating = true;
+    let attempts = 0;
+    const max = this.width * this.height * 2;
+    while (!this.isComplete() && attempts < max && this.isGenerating) {
+      if (!this.step()) {
+        this.log("Restarting...");
         this.init();
         TemplatePlacer.applyTo(this);
-
-        let attempts = 0;
-        const max = this.width * this.height * 2;
-        while (!this.isComplete() && attempts < max && this.isGenerating) {
-            if (!this.step()) {
-                this.log("Restarting...");
-                this.init();
-                TemplatePlacer.applyTo(this);
-                attempts = 0;
-            } else {
-                attempts++;
-            }
-            await this.sleep(this.autoSpeed);
-        }
-
-        if (this.isComplete() && this.isGenerating) {
-            this.placeLocations();
-
-            // Now re-generate name *based on final map* (but don't override user input)
-            const finalName = MapNamer.generate(this);
-            if (!document.getElementById("mapNameInput").value) {
-                this.mapName = finalName;
-            }
-
-            // ✅ Add: Render watercolor overlay
-            if (window.watercolorOverlay) {
-                window.watercolorOverlay.render(this.grid, ThemeManager.current);
-            }
-
-            // Update placeholder only if not overridden
-            this.updateMapName();
-
-            this.log(`🌍 Final Name: "${finalName}"`);
-            this.log("🎉 Complete with locations!");
-        }
-        this.isGenerating = false;
-        this.updateUI();
-    }
-
-    sleep(ms) {
-        return new Promise((r) => setTimeout(r, ms));
-    }
-
-    updateUI() {
-        this.renderGrid();
-        this.updateProgress();
-        this.updateStats();
-        this.updateMapName();
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-renderGrid() {
-  const container = document.getElementById("mapGrid");
-  if (!container || !this.width || !this.height) return;
-
-  // Ensure grid is initialized
-  if (!this.grid || this.grid.length === 0) {
-    console.warn("Grid not initialized yet");
-    return;
-  }
-
-  const w = this.width;
-  const h = this.height;
-  const maxTileSize = 600 / Math.max(w, h);
-  const tileSize = Math.min(48, maxTileSize);
-
-  // Apply grid structure
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = `repeat(${w}, ${tileSize}px)`;
-  container.style.gridTemplateRows = `repeat(${h}, ${tileSize}px)`;
-  container.style.gap = "0";
-  container.style.border = "none";
-  container.style.justifyContent = "center";
-  container.style.alignItems = "center";
-
-  // Clear and re-render
-  container.innerHTML = "";
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const cell = this.grid[y][x];
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.dataset.pos = `${x},${y}`;
-
-      if (cell.collapsed) {
-        const theme = ThemeManager.current;
-        const visual = theme.elevation[cell.terrain];
-        tile.style.backgroundColor = visual?.colors[0] || "#374151";
-        if (cell.location) {
-          const locTheme = theme.locations[cell.location.id];
-          tile.classList.add("location");
-          tile.textContent = locTheme?.emoji || cell.location.emoji;
-          tile.title = locTheme?.label || cell.location.name;
-        }
+        attempts = 0;
       } else {
-        tile.style.backgroundColor = "#374151"; // uncollapsed color
+        attempts++;
       }
-
-      tile.style.width = `${tileSize}px`;
-      tile.style.height = `${tileSize}px`;
-      container.appendChild(tile);
+      await this.sleep(this.autoSpeed);
     }
+
+    if (this.isComplete() && this.isGenerating) {
+      this.placeLocations();
+      this.mapName = MapNamer.generate(this); // Re-generate after placing locations
+      this.log(`🌍 Map Name: "${this.mapName}"`);
+      this.log("🎉 Complete with locations!");
+    }
+
+    this.isGenerating = false;
+    this.updateUI();
   }
+
+
+
+async autoGenerate() {
+  if (this.isGenerating) return;
+
+  // Use manual name if provided, else generate
+  //const input = document.getElementById("mapNameInput");
+ // const userInput = input?.value.trim(); // Safe access
+
+  // Use manual name if provided, else generate
+  //this.mapName = userInput || MapNamer.generate(this);
+
+
+  const input = document.getElementById("mapNameInput");
+const userInput = input?.value.trim();
+this.mapName = userInput || MapNamer.generate(this);
+
+  const seedValue = MapNamer.stringToSeed(this.mapName);
+  Math.seedrandom?.(seedValue);
+
+  this.isGenerating = true;
+  this.init();
+  TemplatePlacer.applyTo(this);
+
+  let attempts = 0;
+  const max = this.width * this.height * 2;
+  while (!this.isComplete() && attempts < max && this.isGenerating) {
+    if (!this.step()) {
+      this.log("Restarting...");
+      this.init();
+      TemplatePlacer.applyTo(this);
+      attempts = 0;
+    } else {
+      attempts++;
+    }
+    await this.sleep(this.autoSpeed);
+  }
+
+  if (this.isComplete() && this.isGenerating) {
+    this.placeLocations();
+
+    // Now re-generate name *based on final map* (but don't override user input)
+    const finalName = MapNamer.generate(this);
+    if (!document.getElementById("mapNameInput").value) {
+      this.mapName = finalName;
+    }
+    // Update placeholder only if not overridden
+    this.updateMapName();
+
+    this.log(`🌍 Final Name: "${finalName}"`);
+    this.log("🎉 Complete with locations!");
+  }
+  this.isGenerating = false;
+  this.updateUI();
 }
 
 
 
 
 
+  sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
 
+  updateUI() {
+    this.renderGrid();
+    this.updateProgress();
+    this.updateStats();
+    this.updateMapName();
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    renderGrid_old() {
-        const container = document.getElementById("mapGrid");
-        const w = this.width;
-        const h = this.height;
-        const tileSize = Math.min(48, 600 / Math.max(w, h));
-        container.style.cssText = `
+  renderGrid() {
+    const container = document.getElementById("mapGrid");
+    const w = this.width;
+    const h = this.height;
+    const tileSize = Math.min(48, 600 / Math.max(w, h));
+    container.style.cssText = `
       grid-template-columns: repeat(${w}, ${tileSize}px);
       grid-template-rows: repeat(${h}, ${tileSize}px);
       gap: 0;
     `;
-        container.innerHTML = "";
+    container.innerHTML = "";
 
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                const cell = this.grid[y][x];
-                const tile = document.createElement("div");
-                tile.className = "tile";
-                tile.dataset.pos = `${x},${y}`;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const cell = this.grid[y][x];
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.dataset.pos = `${x},${y}`;
 
-                if (cell.collapsed) {
-                    // ✅ Keep location rendering
-                    if (cell.location) {
-                      //  const locTheme = theme.locations[cell.location.id];
-                        const locTheme = ThemeManager.current.locations[cell.location.id];
-                        tile.classList.add("location");
-                        tile.textContent = locTheme?.emoji || cell.location.emoji;
-                        tile.title = locTheme?.label || cell.location.name;
-                    }
-                    // ❌ Remove terrain background
-                    // tile.style.backgroundColor = visual?.colors[0] || "#374151";
-                    // ✅ Make tile transparent
-                    tile.style.backgroundColor = "transparent";
-                } else {
-                    tile.style.backgroundColor = "#374151";
-                }
-
-                tile.style.width = `${tileSize}px`;
-                tile.style.height = `${tileSize}px`;
-                container.appendChild(tile);
-            }
+        if (cell.collapsed) {
+          const theme = ThemeManager.current;
+          const visual = theme.elevation[cell.terrain];
+          tile.style.backgroundColor = visual?.colors[0] || "#374151";
+          if (cell.location) {
+            const locTheme = theme.locations[cell.location.id];
+            tile.classList.add("location");
+            tile.textContent = locTheme?.emoji || cell.location.emoji;
+            tile.title = locTheme?.label || cell.location.name;
+          }
+        } else {
+          tile.style.backgroundColor = "#374151";
         }
-    }
 
-    updateProgress() {
-        const total = this.width * this.height;
-        const done = this.grid.flat().filter((c) => c.collapsed).length;
-        const p = Math.round((done / total) * 100);
-        const bar = document.getElementById("progressBar");
-        bar.style.width = `${p}%`;
-        bar.textContent = `${p}%`;
+        tile.style.width = `${tileSize}px`;
+        tile.style.height = `${tileSize}px`;
+        container.appendChild(tile);
+      }
     }
+  }
 
-    updateStats() {
-        document.getElementById("stepCount").textContent = this.stepCount;
-        document.getElementById("locationCount").textContent = this.locationCount;
-        const unCollapsed = this.grid.flat().filter((c) => !c.collapsed);
-        const entropy = unCollapsed.reduce((sum, c) => sum + c.possibilities.length, 0);
-        const collapsed = this.grid.flat().filter((c) => c.collapsed).length;
-        document.getElementById("entropyCount").textContent = entropy;
-        document.getElementById("collapsedCount").textContent = collapsed;
-    }
+  updateProgress() {
+    const total = this.width * this.height;
+    const done = this.grid.flat().filter(c => c.collapsed).length;
+    const p = Math.round((done / total) * 100);
+    const bar = document.getElementById("progressBar");
+    bar.style.width = `${p}%`;
+    bar.textContent = `${p}%`;
+  }
 
-    updateMapName() {
-        const input = document.getElementById("mapNameInput");
-        if (!input) return;
+  updateStats() {
+    document.getElementById("stepCount").textContent = this.stepCount;
+    document.getElementById("locationCount").textContent = this.locationCount;
+    const unCollapsed = this.grid.flat().filter(c => !c.collapsed);
+    const entropy = unCollapsed.reduce((sum, c) => sum + c.possibilities.length, 0);
+    const collapsed = this.grid.flat().filter(c => c.collapsed).length;
+    document.getElementById("entropyCount").textContent = entropy;
+    document.getElementById("collapsedCount").textContent = collapsed;
+  }
 
-        // Only update placeholder if user hasn't typed anything
-        if (!input.value) {
-            input.placeholder = this.mapName || "Unnamed World";
-        }
-    }
+updateMapName() {
+  const input = document.getElementById("mapNameInput");
+  if (!input) return;
 
-    log(msg) {
-        const log = document.getElementById("log");
-        const time = new Date().toLocaleTimeString();
-        log.innerHTML += `<div>[${time}] ${msg}</div>`;
-        log.scrollTop = log.scrollHeight;
-    }
+  // Only update placeholder if user hasn't typed anything
+  if (!input.value) {
+    input.placeholder = this.mapName || "Unnamed World";
+  }
 }
 
+  log(msg) {
+    const log = document.getElementById("log");
+    const time = new Date().toLocaleTimeString();
+    log.innerHTML += `<div>[${time}] ${msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }
+}
 
 ==================================================
 FILE: themes\cyberpunk.json

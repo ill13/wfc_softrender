@@ -1,22 +1,20 @@
-All File Tree for 'WaveFunctionCollapse' - Generated 2025-09-06 01:27:44
+All File Tree for 'WaveFunctionCollapse' - Generated 2025-09-06 15:48:17
 Mode: all
 Tiktoken available: True
 Encoding: cl100k_base
 ==================================================
 
-├── index.html [[92m1,093[0m tokens]
-├── wc.html [[92m1,775[0m tokens]
-├── css/ ⚠️ [[92m2,117[0m tokens, 1 files]
-│   ├── style.css ⚠️ [[92m2,117[0m tokens]
-├── js/ ⚠️ [[92m2,215[0m tokens, 4 files]
+├── index.html [[92m1,038[0m tokens]
+├── css/ ✅ [[92m1,996[0m tokens, 1 files]
+│   ├── style.css [[92m1,996[0m tokens]
+├── js/ ✅ [[92m1,928[0m tokens, 4 files]
 │   ├── TemplatePlacer.js [[92m643[0m tokens]
 │   ├── loader.js [[92m179[0m tokens]
-│   ├── main.js [[92m1,144[0m tokens]
+│   ├── main.js [[92m857[0m tokens]
 │   ├── themeManager.js [[92m249[0m tokens]
-│   ├── classes/ 🔥 [[92m6,084[0m tokens, 3 files]
+│   ├── classes/ ⚠️ [[92m4,149[0m tokens, 2 files]
 │   │   ├── MapNamer.js [[92m1,195[0m tokens]
-│   │   ├── WatercolorOverlay.js [[92m1,664[0m tokens]
-│   │   ├── WaveFunctionCollapse.js ⚠️ [[92m3,225[0m tokens]
+│   │   ├── WaveFunctionCollapse.js ⚠️ [[92m2,954[0m tokens]
 ├── themes/ ⚠️ [[92m2,758[0m tokens, 3 files]
 │   ├── cyberpunk.json [[92m920[0m tokens]
 │   ├── fantasy.json [[92m946[0m tokens]
@@ -25,8 +23,8 @@ Encoding: cl100k_base
 ==================================================
 SUMMARY
 ==================================================
-Total files: 13
-Total tokens: [92m16,042[0m
+Total files: 11
+Total tokens: [92m11,869[0m
 Status: GREEN
 Red threshold: 180,000
 Yellow threshold: 120,000

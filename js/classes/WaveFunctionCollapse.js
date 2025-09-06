@@ -1,6 +1,5 @@
 // js/classes/WaveFunctionCollapse.js
 class WaveFunctionCollapse {
-  
     constructor(width, height, themeName) {
         this.width = width;
         this.height = height;
@@ -12,14 +11,24 @@ class WaveFunctionCollapse {
         this.autoSpeed = 0;
         this.placedLocations = [];
         this.mapName = "";
+        this.parchment = null; // ← Add this
         this.init();
     }
 
     init() {
+        // Remove existing parchment overlay if present
+        const container = document.getElementById("mapGrid");
+        if (container) {
+            const overlay = container.querySelector("canvas");
+            if (overlay) overlay.remove();
+        }
+
+        // Re-init grid
         this.grid = [];
         this.stepCount = 0;
         this.locationCount = 0;
         this.placedLocations = [];
+
         for (let y = 0; y < this.height; y++) {
             this.grid[y] = [];
             for (let x = 0; x < this.width; x++) {
@@ -209,22 +218,13 @@ class WaveFunctionCollapse {
         return true;
     }
 
-    async autoGenerate() {
+    async autoGenerate_old() {
         if (this.isGenerating) return;
 
-        // Use manual name if provided, else generate
-        //const input = document.getElementById("mapNameInput");
-        // const userInput = input?.value.trim(); // Safe access
-
-        // Use manual name if provided, else generate
-        //this.mapName = userInput || MapNamer.generate(this);
-
-        const input = document.getElementById("mapNameInput");
-        const userInput = input?.value.trim();
-        this.mapName = userInput || MapNamer.generate(this);
-
+        // Generate name → use as seed
+        this.mapName = MapNamer.generate(this);
         const seedValue = MapNamer.stringToSeed(this.mapName);
-        Math.seedrandom?.(seedValue);
+        Math.seedrandom?.(seedValue); // Requires seedrandom.js
 
         this.isGenerating = true;
         this.init();
@@ -246,29 +246,110 @@ class WaveFunctionCollapse {
 
         if (this.isComplete() && this.isGenerating) {
             this.placeLocations();
-            this.updateUI();
+            this.mapName = MapNamer.generate(this); // Re-generate after placing locations
+            this.log(`🌍 Map Name: "${this.mapName}"`);
+            this.log("🎉 Complete with locations!");
+        }
 
-            // Now re-generate name *based on final map* (but don't override user input)
+        this.isGenerating = false;
+        this.updateUI();
+    }
+
+    /**
+     * Generate the map automatically with seeded randomness.
+     * After completion, applies smart locations and renders the parchment overlay.
+     */
+    async autoGenerate() {
+        if (this.isGenerating) return;
+
+        // Use manual name if provided, else generate one
+        const input = document.getElementById("mapNameInput");
+        const userInput = input?.value.trim();
+        this.mapName = userInput || MapNamer.generate(this);
+
+        // Seed RNG for deterministic generation
+        const seedValue = MapNamer.stringToSeed(this.mapName);
+        Math.seedrandom?.(seedValue);
+
+        this.isGenerating = true;
+        this.init(); // Reset grid
+        TemplatePlacer.applyTo(this); // Apply any terrain templates
+
+        let attempts = 0;
+        const max = this.width * this.height * 2;
+
+        // Main generation loop
+        while (!this.isComplete() && attempts < max && this.isGenerating) {
+            if (!this.step()) {
+                this.log("Restarting due to contradiction...");
+                this.init();
+                TemplatePlacer.applyTo(this);
+                attempts = 0;
+            } else {
+                attempts++;
+            }
+            await this.sleep(this.autoSpeed);
+        }
+
+        // ✅ ONLY IF generation succeeded and hasn't been canceled
+        if (this.isComplete() && this.isGenerating) {
+            this.placeLocations(); // Place locations based on rules
+
+            // Re-generate map name based on final state (unless user typed one)
             const finalName = MapNamer.generate(this);
             if (!document.getElementById("mapNameInput").value) {
                 this.mapName = finalName;
             }
-
-            // ✅ Add: Render watercolor overlay
-            if (window.watercolorOverlay) {
-                window.watercolorOverlay.render(this.grid, ThemeManager.current);
-            }
-
-            // Update placeholder only if not overridden
             this.updateMapName();
-
             this.log(`🌍 Final Name: "${finalName}"`);
             this.log("🎉 Complete with locations!");
-        }
-        this.isGenerating = false;
-        //this.updateUI();
-    }
 
+            // ===================================================================================
+            // ✅ NEW: PARCHMENT OVERLAY HANDLING
+            // - Only runs if ParchmentOverlay class is loaded
+            // - Uses same seed for deterministic visuals
+            // - Hides WFC tiles, keeps locations visible
+            // ===================================================================================
+            if (typeof ParchmentOverlay !== "undefined") {
+                // Instantiate the overlay with grid size, theme, and seed
+                this.parchment = new ParchmentOverlay(this.width, this.height, this.themeName, seedValue);
+
+                // Load theme color data
+                this.parchment.initFromTheme(ThemeManager.current);
+
+                // Pass the final WFC grid data
+                this.parchment.setMapData(this.grid);
+
+                // Create and render the overlay canvas
+                const overlayCanvas = this.parchment.createCanvas();
+                this.parchment.render();
+                console.log("Parchment overlay added:", overlayCanvas.width, "x", overlayCanvas.height);
+
+                // Add to DOM — position over the map grid
+                const container = document.getElementById("mapGrid");
+                container.style.position = "relative"; // Ensure absolute positioning works
+                container.appendChild(overlayCanvas);
+
+                // Hide the original WFC tiles (but leave location tiles visible)
+                container.querySelectorAll(".tile").forEach((tile) => {
+                    if (!tile.classList.contains("location")) {
+                        tile.style.visibility = "hidden";
+                    }
+                });
+
+                this.renderLocationsOnTop();
+            }
+            // ===================================================================================
+            // ✅ END OF PARCHMENT OVERLAY LOGIC
+            // ===================================================================================
+        }
+
+        // Final cleanup
+        this.isGenerating = false;
+        //  this.updateUI();
+        this.updateStats();
+        this.updateMapName();
+    }
     sleep(ms) {
         return new Promise((r) => setTimeout(r, ms));
     }
@@ -284,12 +365,21 @@ class WaveFunctionCollapse {
         const container = document.getElementById("mapGrid");
         const w = this.width;
         const h = this.height;
-        const tileSize = Math.min(48, 600 / Math.max(w, h));
+        const tileSize = Math.min(48, 600 / Math.max(w, h)); // Max 600px canvas
+        const totalWidth = w * tileSize;
+        const totalHeight = h * tileSize;
+
+        // Set container size explicitly
         container.style.cssText = `
-      grid-template-columns: repeat(${w}, ${tileSize}px);
-      grid-template-rows: repeat(${h}, ${tileSize}px);
-      gap: 0;
-    `;
+    grid-template-columns: repeat(${w}, ${tileSize}px);
+    grid-template-rows: repeat(${h}, ${tileSize}px);
+    gap: 0;
+    width: ${totalWidth}px;
+    height: ${totalHeight}px;
+    margin: 0 auto;
+    position: relative;
+  `;
+
         container.innerHTML = "";
 
         for (let y = 0; y < h; y++) {
@@ -298,30 +388,73 @@ class WaveFunctionCollapse {
                 const tile = document.createElement("div");
                 tile.className = "tile";
                 tile.dataset.pos = `${x},${y}`;
-
                 if (cell.collapsed) {
-                    // ✅ Keep location rendering
+                    const theme = ThemeManager.current;
+                    const visual = theme.elevation[cell.terrain];
+                    tile.style.backgroundColor = visual?.colors[0] || "#374151";
                     if (cell.location) {
-                      //  const locTheme = theme.locations[cell.location.id];
-                        const locTheme = ThemeManager.current.locations[cell.location.id];
+                        const locTheme = theme.locations[cell.location.id];
                         tile.classList.add("location");
                         tile.textContent = locTheme?.emoji || cell.location.emoji;
                         tile.title = locTheme?.label || cell.location.name;
                     }
-                    // ❌ Remove terrain background
-                    // tile.style.backgroundColor = visual?.colors[0] || "#374151";
-                    // ✅ Make tile transparent
-                    tile.style.backgroundColor = "transparent";
                 } else {
                     tile.style.backgroundColor = "#374151";
                 }
-
                 tile.style.width = `${tileSize}px`;
                 tile.style.height = `${tileSize}px`;
                 container.appendChild(tile);
             }
         }
     }
+
+
+
+
+
+
+
+    renderLocationsOnTop() {
+  const container = document.getElementById("mapGrid");
+  const tileSize = Math.min(48, 600 / Math.max(this.width, this.height));
+
+  // Remove existing location overlays
+  container.querySelectorAll(".location-overlay").forEach(el => el.remove());
+
+  this.placedLocations.forEach(({ x, y, loc }) => {
+    const theme = ThemeManager.current.locations[loc.id];
+    const emoji = theme?.emoji || loc.emoji;
+
+    const locationEl = document.createElement("div");
+    locationEl.className = "location-overlay";
+    locationEl.textContent = emoji;
+    locationEl.title = theme?.label || loc.name;
+    locationEl.style.cssText = `
+      position: absolute;
+      left: ${x * tileSize}px;
+      top: ${y * tileSize}px;
+      width: ${tileSize}px;
+      height: ${tileSize}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4em;
+      z-index: 3;
+      pointer-events: none;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+    `;
+    container.appendChild(locationEl);
+  });
+}
+
+
+
+
+
+
+
+
 
     updateProgress() {
         const total = this.width * this.height;

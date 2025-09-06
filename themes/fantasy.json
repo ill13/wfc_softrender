@@ -4,7 +4,7 @@
   "elevation": {
     "spire": {
       "label": "Ancient Peaks",
-      "colors": ["#333333", "#4B5563", "#6B7280"],
+      "colors": ["#777777", "#4B5563", "#6B7280"],
       "weight": 12,
       "adjacent": ["forest", "barrens"]
     },
@@ -34,16 +34,16 @@
     }
   },
   "locations": {
-    "cottage": { "label": "Hermit's Cottage", "emoji": "🛖", "rules": { "on": ["forest"], "adjacent": ["water"] } },
+    "cottage": { "label": "Hermit's Cottage", "emoji": "🛖", "rules": { "on": ["forest"], "adjacent": ["meadow"] } },
     "peak": { "label": "Dragon's Perch", "emoji": "🐉", "rules": { "on": ["spire"] } },
     "sanctum": { "label": "Crystal Sanctum", "emoji": "🔮", "rules": { "on": ["spire"], "adjacent": ["barrens"] } },
-    "ruins": { "label": "Fallen Temple", "emoji": "🏛️", "rules": { "on": ["barrens"], "adjacent": ["spire"] } },
+    "ruins": { "label": "Fallen Temple", "emoji": "🏛️", "rules": { "on": ["forest"], "adjacent": ["forest"] } },
     "lighthouse": { "label": "Lantern Tower", "emoji": "🗼", "rules": { "on": ["meadow"], "adjacent": ["water"] } },
-    "wharf": { "label": "River Wharf", "emoji": "⚓", "rules": { "on": ["meadow", "water"], "adjacent": ["forest"] } },
+    "wharf": { "label": "River Wharf", "emoji": "⚓", "rules": { "on": ["meadow", "spire"], "adjacent": ["water"] } },
     "crossroads": { "label": "Fae Crossroads", "emoji": "🛣️", "rules": { "on": ["forest"], "adjacent": ["meadow", "spire"] } },
-    "mines": { "label": "Gem Caverns", "emoji": "💎", "rules": { "on": ["spire"], "adjacent": ["barrens"] } },
+    "mines": { "label": "Gem Caverns", "emoji": "💎", "rules": { "on": ["spire"], "adjacent": ["forest"] } },
     "grove": { "label": "Sacred Grove", "emoji": "🌳", "rules": { "on": ["forest"] } },
-    "ford": { "label": "Stone Ford", "emoji": "🪨", "rules": { "on": ["water"], "adjacent": ["meadow"] } }
+    "ford": { "label": "Stone Ford", "emoji": "🪨", "rules": { "on": ["meadow"], "adjacent": ["spire"] } }
   },
   "templates": {
     "river_flow": {
