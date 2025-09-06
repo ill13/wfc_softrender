@@ -1,7 +1,7 @@
 All files from 'WaveFunctionCollapse'
-Generated: 2025-09-05 20:19:48
+Generated: 2025-09-05 22:12:35
 Mode: all
-Included extensions: yaml, less, html, cfg, vue, scss, png, tsx, py, toml, bmp, ts, js, jpeg, jpg, svg, tiff, jsx, gif, txt, sass, json, yml, css, ini, webp
+Included extensions: tsx, css, gif, webp, ini, less, jpeg, vue, yml, tiff, json, yaml, toml, ts, bmp, js, html, scss, cfg, png, jsx, svg, py, txt, sass, jpg
 Tiktoken available: True
 Encoding: cl100k_base
 ==================================================
@@ -128,8 +128,8 @@ TOKENS: [92m1,052[0m
 
 ==================================================
 FILE: css\style.css
-MODIFIED: 2025-09-05 18:45:54
-TOKENS: [92m2,004[0m
+MODIFIED: 2025-09-05 21:36:07
+TOKENS: [92m2,124[0m
 ==================================================
 
 /* === Global Styles === */
@@ -144,6 +144,10 @@ TOKENS: [92m2,004[0m
   --border-radius: 6px;
   --shadow: 0 0 20px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(212, 175, 55, 0.2);
 }
+
+
+
+
 
 * {
   box-sizing: border-box;
@@ -332,7 +336,7 @@ button:active {
   border: none;
 }
 
-.tile {
+/* .tile {
   position: relative;
   display: flex;
   align-items: center;
@@ -342,6 +346,27 @@ button:active {
   height: 100%;
   width: 100%;
 }
+ */
+
+
+.tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  height: 100%;
+  width: 100%;
+  /* Hide background and borders */
+  /* background: transparent !important; */
+  box-shadow: none !important;
+  border: none !important;
+  /* Optional: hide emoji/text if you want pure paint */
+  /* color: transparent !important; */
+}
+
+
 
 .tile.location {
   z-index: 2;
@@ -505,6 +530,11 @@ button:active {
   }
 }
 
+#mapContainer {
+  position: relative;
+}
+
+
 ==================================================
 FILE: js\loader.js
 MODIFIED: 2025-09-04 15:33:54
@@ -540,8 +570,8 @@ class DataLoader {
 
 ==================================================
 FILE: js\main.js
-MODIFIED: 2025-09-05 18:14:02
-TOKENS: [92m968[0m
+MODIFIED: 2025-09-05 21:50:31
+TOKENS: [92m1,152[0m
 ==================================================
 
 // js/main.js
@@ -564,11 +594,11 @@ async function initApp() {
   wfc.updateUI();
 
   // Initialize SoftRenderer once mapGrid exists
-const mapGrid = document.getElementById("mapGrid");
-softRenderer = new SoftRenderer(mapGrid);
+  const mapGrid = document.getElementById("mapGrid");
+  softRenderer = new SoftRenderer(mapGrid);
 
   //Inside initApp(), after wfc.updateUI();
-//  const mapGrid = document.getElementById("mapGrid");
+  //  const mapGrid = document.getElementById("mapGrid");
   // if (!window.softRenderer && mapGrid) {
   //   window.softRenderer = new SoftRenderer(mapGrid);
   // }
@@ -619,6 +649,10 @@ function setupEventListeners() {
     const h = parseInt(document.getElementById("gridHeight").value);
     const themeName = document.getElementById("themeSelect").value;
     wfc = new WaveFunctionCollapse(w, h, themeName);
+
+    // ✅ Force SoftRenderer to reset canvas and redraw state
+    softRenderer?.reset();
+
     wfc.autoGenerate();
   });
 
@@ -642,7 +676,13 @@ function setupEventListeners() {
     const h = parseInt(document.getElementById("gridHeight").value);
     const themeName = document.getElementById("themeSelect").value;
     wfc = new WaveFunctionCollapse(w, h, themeName);
-    document.getElementById("autoBtn").textContent = "Auto Generate";
+    // ✅ Force SoftRenderer to reattach to new grid
+    const mapGrid = document.getElementById("mapGrid");
+    if (softRenderer) {
+      softRenderer.gridEl = mapGrid;
+      softRenderer.lastGridEl = null; // Force reset on next update
+    }
+    wfc.updateUI();
   });
 
   document.getElementById("slowBtn").addEventListener("click", () => (wfc.autoSpeed = 300));
@@ -661,6 +701,19 @@ function setupEventListeners() {
     wfc.updateUI();
   });
 }
+
+// Press 'H' to hide/show base tiles (for dev)
+document.addEventListener("keydown", (e) => {
+  if (e.key === "h" || e.key === "H") {
+    console.log("hide/unhide");
+    const tiles = document.querySelectorAll(".tile");
+    const isVisible = tiles[0]?.style.color !== "transparent";
+    document.querySelectorAll(".tile").forEach((t) => {
+      t.style.color = isVisible ? "transparent" : "";
+      t.style.backgroundColor = "transparent";
+    });
+  }
+});
 
 // Start
 document.addEventListener("DOMContentLoaded", async () => {
@@ -926,16 +979,12 @@ static generate(wfc) {
 
 ==================================================
 FILE: js\classes\SoftRenderer.js
-MODIFIED: 2025-09-05 18:50:07
-TOKENS: [92m1,597[0m
+MODIFIED: 2025-09-05 21:36:55
+TOKENS: [92m2,242[0m
 ==================================================
 
 // js/classes/SoftRenderer.js
 class SoftRenderer {
-  /**
-   * Pure visual overlay for any grid of colored tiles.
-   * Knows nothing about WFC, terrain names, or themes — only colors and positions.
-   */
   constructor(mapGridElement) {
     this.gridEl = mapGridElement;
     this.canvas = null;
@@ -945,51 +994,97 @@ class SoftRenderer {
     this.height = 0;
     this.rows = 0;
     this.cols = 0;
+    this.drawn = new Set();
+    this.lastGridEl = null;
+    this.mapKey = null; // Track current map uniquely
     this.init();
   }
 
-init() {
-  const rect = this.gridEl.getBoundingClientRect();
-  this.tileSize = rect.width / Math.sqrt(this.gridEl.children.length);
-  this.width = Math.round(rect.width);
-  this.height = Math.round(rect.height);
-  this.cols = Math.floor(this.width / this.tileSize);
-  this.rows = Math.floor(this.height / this.tileSize);
+  init() {
+    const rect = this.gridEl.getBoundingClientRect();
+    this.tileSize = rect.width / Math.sqrt(this.gridEl.children.length);
+    this.width = Math.round(rect.width);
+    this.height = Math.round(rect.height);
+    this.cols = Math.floor(this.width / this.tileSize);
+    this.rows = Math.floor(this.height / this.cols);
 
-  this.canvas = document.createElement("canvas");
-  this.canvas.width = this.width;
-  this.canvas.height = this.height;
-  this.canvas.style.cssText = `
-    position: fixed;
-    pointer-events: none;
-    z-index: 3;
-  `;
-  this.gridEl.parentElement.appendChild(this.canvas);
-  this.ctx = this.canvas.getContext("2d");
+    // Create or reuse canvas
+    if (!this.canvas) {
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        z-index: 3;
+        width: ${this.width}px;
+        height: ${this.height}px;
+      `;
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      this.gridEl.parentElement.style.position = "relative"; // Ensure positioning context
+      this.gridEl.parentElement.appendChild(this.canvas);
+      this.ctx = this.canvas.getContext("2d");
+    } else {
+      // Resize existing canvas
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      this.canvas.style.width = `${this.width}px`;
+      this.canvas.style.height = `${this.height}px`;
+    }
 
-  // ✅ Apply border offset
-  const border = parseInt(window.getComputedStyle(this.gridEl.parentElement).borderLeftWidth);
-  this.ctx.translate(border, border);
+    this.ctx.resetTransform();
+    this.ctx.imageSmoothingEnabled = false;
 
-  // Disable smoothing
-  this.ctx.imageSmoothingEnabled = false;
-}
+    // Apply border offset
+    const border = parseInt(window.getComputedStyle(this.gridEl.parentElement).borderLeftWidth) || 0;
+    this.ctx.translate(border, border);
+  }
+
+  reset() {
+    // ✅ Always fully clear canvas
+    this.ctx.clearRect(0, 0, this.width, this.height);
+
+    // ✅ Reset composite mode before drawing background
+    this.ctx.globalCompositeOperation = "source-over";
+
+    // ✅ Redraw clean parchment texture
+    this.drawParchmentTexture();
+
+    // ✅ Reset drawn set for new map
+    this.drawn.clear();
+
+    // ✅ Generate new map key to invalidate old draws
+    this.mapKey = Date.now(); // Or use a UUID, but Date.now() suffices for now
+  }
+
+  update() {
+    // If grid changed (new map), re-init and reset
+    if (this.gridEl !== this.lastGridEl) {
+      this.lastGridEl = this.gridEl;
+      this.init(); // Recalculate sizes
+      this.reset(); // Clear canvas, reset state
+    }
+
+    // ✅ Always clear drawn set before full redraw
+    // But we already do this in reset(), and we now redraw all tiles every frame
+    // So let’s remove per-tile memoization within same map — it’s unsafe during partial updates
+    this.render();
+  }
 
   render() {
     if (!this.ctx) return;
-    this.ctx.clearRect(0, 0, this.width, this.height);
 
     const tiles = Array.from(this.gridEl.children);
+    this.drawn.clear(); // 🔁 Clear every frame — we do full redraw now
 
     tiles.forEach((tile, index) => {
       const x = index % this.cols;
       const y = Math.floor(index / this.cols);
 
       const bgColor = this.getTileColor(tile);
-      if (!bgColor || bgColor === "rgb(55, 65, 81)") return; // skip uncollapsed
+      if (!bgColor || bgColor === "rgb(55, 65, 81)") return; // Skip empty/ignored
 
       const style = this.getStyleForColor(bgColor);
-      this.drawSoftTile(x, y, bgColor, style);
+      this.drawWatercolorSplotch(x, y, bgColor, style);
     });
   }
 
@@ -999,85 +1094,114 @@ init() {
   }
 
   getStyleForColor(color) {
-    // Only map colors to soft styles — no knowledge of terrain names
     const styleMap = {
       // Fantasy
-      "rgb(119, 119, 119)": { scale: 1.1, offsetY: -4, blur: 6, alpha: 0.9 }, // spire
-      "rgb(22, 163, 74)": { scale: 1.25, blur: 8, alpha: 0.8 }, // forest
-      "rgb(163, 230, 53)": { scale: 1.2, blur: 6, alpha: 0.8 }, // meadow
-      "rgb(29, 78, 216)": { scale: 1.15, blur: 10, alpha: 0.7, flow: true }, // water
-      "rgb(124, 45, 18)": { scale: 0.85, alpha: 0.6, texture: "ash" }, // barrens
+      "rgb(119, 119, 119)": { scale: 1.1, offsetY: -4, blur: 6, alpha: 0.5 },
+      "rgb(22, 163, 74)": { scale: 1.25, blur: 8, alpha: 0.4 },
+      "rgb(163, 230, 53)": { scale: 1.2, blur: 6, alpha: 0.35 },
+      "rgb(29, 78, 216)": { scale: 1.15, blur: 10, alpha: 0.5, flow: true },
+      "rgb(124, 45, 18)": { scale: 0.85, alpha: 0.3, texture: "ash" },
 
       // Cyberpunk
-      "rgb(84, 41, 92)": { scale: 1.2, blur: 12, alpha: 0.6, glow: "#33F0FF" }, // canal
-      "rgb(70, 127, 161)": { scale: 1.0, blur: 4, alpha: 0.8 }, // core
-      "rgb(55, 65, 81)": { scale: 0.9, alpha: 0.6 }, // wasteland
+      "rgb(84, 41, 92)": { scale: 1.2, blur: 12, alpha: 0.4, glow: "#33F0FF" },
+      "rgb(70, 127, 161)": { scale: 1.0, blur: 4, alpha: 0.4 },
+      "rgb(55, 65, 81)": { scale: 0.9, alpha: 0.3 },
 
       // Modern
-      "rgb(14, 165, 233)": { scale: 1.2, blur: 10, alpha: 0.7 }, // river
-      "rgb(16, 185, 129)": { scale: 1.2, blur: 6, alpha: 0.8 }, // estates
-      "rgb(22, 163, 74)": { scale: 1.1, blur: 5, alpha: 0.8 } // suburbia
+      "rgb(14, 165, 233)": { scale: 1.2, blur: 10, alpha: 0.5 },
+      "rgb(16, 185, 129)": { scale: 1.2, blur: 6, alpha: 0.4 },
+      "rgb(22, 163, 74)": { scale: 1.1, blur: 5, alpha: 0.4 },
     };
 
-    return styleMap[color] || { scale: 1.0, blur: 0, alpha: 1.0 };
+    return styleMap[color] || { scale: 1.0, blur: 0, alpha: 0.4 };
   }
 
-drawSoftTile(x, y, color, style) {
-  const { scale = 1.0, blur = 0, alpha = 1.0, offsetY = 0, glow, flow, texture } = style;
-  
-  // ✅ Use exact pixel positions
-  const tx = x * this.tileSize;
-  const ty = y * this.tileSize;
-  const cx = tx + this.tileSize / 2;
-  const cy = ty + this.tileSize / 2;
-  const size = this.tileSize * scale;
+  drawWatercolorSplotch(x, y, color, style) {
+    const { scale = 1.0, blur = 0, alpha = 0.4, offsetY = 0, glow, flow, texture } = style;
 
-  this.ctx.save();
-  this.ctx.globalAlpha = alpha;
+    const tx = x * this.tileSize;
+    const ty = y * this.tileSize;
+    const cx = tx + this.tileSize / 2;
+    const cy = ty + this.tileSize / 2;
+    const size = this.tileSize * scale;
 
-  if (blur > 0) {
-    this.ctx.shadowColor = color;
-    this.ctx.shadowBlur = blur;
+    this.ctx.save();
+
+    // Main pigment blobs
+    this.ctx.shadowBlur = 0;
+    for (let i = 0; i < 4; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const offset = (Math.random() - 0.5) * size * 0.3;
+      const radius = size * (0.25 + Math.random() * 0.15);
+      const dx = cx + Math.cos(angle) * offset;
+      const dy = cy + Math.sin(angle) * offset + offsetY;
+
+      this.ctx.beginPath();
+      this.ctx.arc(dx, dy, radius, 0, Math.PI * 2);
+      this.ctx.fillStyle = color;
+      this.ctx.globalAlpha = alpha * (0.2 + Math.random() * 0.2);
+      this.ctx.fill();
+    }
+
+    // Soft bleed edge
+    if (blur > 0) {
+      this.ctx.globalAlpha = alpha * 0.3;
+      this.ctx.shadowColor = color;
+      this.ctx.shadowBlur = blur * 1.5;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy + offsetY, size * 0.6, size * 0.4, 0, 0, Math.PI * 2);
+      this.ctx.fillStyle = color;
+      this.ctx.fill();
+    }
+
+    // Flow effect
+    if (flow) {
+      this.ctx.globalAlpha = alpha * 0.2;
+      this.ctx.shadowColor = color;
+      this.ctx.shadowBlur = blur * 2;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy + offsetY + 4, size * 0.7, size * 0.3, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    // Glow (cyberpunk)
+    if (glow) {
+      this.ctx.globalAlpha = alpha * 0.2;
+      this.ctx.shadowColor = glow;
+      this.ctx.shadowBlur = blur * 2.5;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy + offsetY, size * 0.5, size * 0.5, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
+
+    // Ash texture
+    if (texture === "ash") {
+      this.drawGrain(cx, cy, size, "#fff", 0.1);
+    }
+
+    this.ctx.restore();
   }
 
-  if (glow) {
-    this.ctx.shadowColor = glow;
-    this.ctx.shadowBlur = blur * 2;
-  }
+  drawParchmentTexture() {
+    const ctx = this.ctx;
+    const w = this.width;
+    const h = this.height;
+    const imageData = ctx.createImageData(w, h);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      const value = 245 + Math.random() * 10;
+      const tint = Math.random() > 0.9 ? 10 : 0;
+      imageData.data[i] = value + tint;         // R
+      imageData.data[i + 1] = value - 10 + tint; // G
+      imageData.data[i + 2] = value - 30;       // B
+      imageData.data[i + 3] = 255;              // A
+    }
+    ctx.putImageData(imageData, 0, 0);
 
-  if (flow) {
-    this.ctx.beginPath();
-    this.ctx.ellipse(cx, cy + offsetY, size * 0.9, size * 0.5, 0, 0, Math.PI * 2);
-    this.ctx.fillStyle = color;
-    this.ctx.fill();
-  } else {
-    const radius = this.tileSize * 0.3 * scale;
-    this.roundRect(cx - size / 2, cy - size / 2 + offsetY, size, size, radius);
-    this.ctx.fillStyle = color;
-    this.ctx.fill();
-  }
-
-  if (texture === "ash") {
-    this.drawGrain(cx, cy, size, "#fff", 0.1);
-  }
-
-  this.ctx.restore();
-}
-
-
-  roundRect(x, y, width, height, radius) {
-    this.ctx.beginPath();
-    this.ctx.moveTo(x + radius, y);
-    this.ctx.lineTo(x + width - radius, y);
-    this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    this.ctx.lineTo(x + width, y + height - radius);
-    this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    this.ctx.lineTo(x + radius, y + height);
-    this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    this.ctx.lineTo(x, y + radius);
-    this.ctx.quadraticCurveTo(x, y, x + radius, y);
-    this.ctx.closePath();
-    this.ctx.fill();
+    // Use screen blend to lighten base
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = "rgba(255, 255, 220, 0.1)";
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "source-over"; // Reset after
   }
 
   drawGrain(cx, cy, size, color, alpha) {
@@ -1091,16 +1215,12 @@ drawSoftTile(x, y, color, style) {
     }
     this.ctx.restore();
   }
-
-  update() {
-    this.render();
-  }
 }
 
 ==================================================
 FILE: js\classes\WaveFunctionCollapse.js
-MODIFIED: 2025-09-05 17:58:39
-TOKENS: [92m2,960[0m
+MODIFIED: 2025-09-05 21:51:34
+TOKENS: [92m2,991[0m
 ==================================================
 
 // js/classes/WaveFunctionCollapse.js
@@ -1412,13 +1532,17 @@ this.mapName = userInput || MapNamer.generate(this);
     return new Promise(r => setTimeout(r, ms));
   }
 
-  updateUI() {
-    this.renderGrid();
-    this.updateProgress();
-    this.updateStats();
-    this.updateMapName();
+updateUI() {
+  this.renderGrid();
+  this.updateProgress();
+  this.updateStats();
+  this.updateMapName();
+
+  // 🎨 Only apply watercolor splotch effect when map is fully generated
+  if (this.isComplete()) {
     softRenderer?.update();
   }
+}
 
   renderGrid() {
     const container = document.getElementById("mapGrid");
@@ -1442,7 +1566,7 @@ this.mapName = userInput || MapNamer.generate(this);
         if (cell.collapsed) {
           const theme = ThemeManager.current;
           const visual = theme.elevation[cell.terrain];
-          tile.style.backgroundColor = visual?.colors[0] || "#374151";
+          tile.style.backgroundColor = visual?.colors[0] // || "#374151";
           if (cell.location) {
             const locTheme = theme.locations[cell.location.id];
             tile.classList.add("location");
@@ -1450,7 +1574,7 @@ this.mapName = userInput || MapNamer.generate(this);
             tile.title = locTheme?.label || cell.location.name;
           }
         } else {
-          tile.style.backgroundColor = "#374151";
+          tile.style.backgroundColor = "transparent";// "#374151";
         }
 
         tile.style.width = `${tileSize}px`;

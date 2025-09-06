@@ -2,10 +2,24 @@ You and I are the founders of an indie game partnership that specializes in "coz
 
 
 
+
 That said, I need you to take a good look at our current code base to refresh yourself with the project.
 
 
 Attached is some WFC map generation demo code we are working on. Everything seems to be in working order, however our map design is too random. We need more coherency. We were discussing two ways to allieviate this via:
+
+
+
+
+
+
+
+
+
+We implemented our own SoftRenderer. It works, but we'd like the generated splotches from drawWatercolorSplotch to be less circular and more like "splats". more painterly. Could we do this with some sort of bezier curve based polygons?
+
+
+
 
 1. Reduce options to 5:
    1.  Mountain, Forest, Plain, Water, and one rare "bad tile" like Barrens
