@@ -1,0 +1,70 @@
+{
+  "name": "Fantasy",
+  "description": "A quiet journey through enchanted lands",
+  "elevation": {
+    "spire": {
+      "label": "Ancient Peaks",
+      "colors": ["#777", "#4B5563", "#6B7280"],
+      "weight": 12,
+      "adjacent": ["forest", "barrens"]
+    },
+    "forest": {
+      "label": "Whispering Woods",
+      "colors": ["#16A34A", "#15803D", "#166534"],
+      "weight": 30,
+      "adjacent": ["forest", "meadow", "spire"]
+    },
+    "meadow": {
+      "label": "Sunlit Glades",
+      "colors": ["#A3E635", "#84CC16", "#65A30D"],
+      "weight": 20,
+      "adjacent": ["meadow", "forest", "water"]
+    },
+    "water": {
+      "label": "Glass Rivers",
+      "colors": ["#1D4ED8", "#2563EB", "#3B82F6"],
+      "weight": 18,
+      "adjacent": ["water", "meadow", "barrens"]
+    },
+    "barrens": {
+      "label": "Cursed Lands",
+      "colors": ["#7C2D12", "#9A3412", "#C2410C"],
+      "weight": 5,
+      "adjacent": ["spire", "forest", "barrens"]
+    }
+  },
+  "locations": {
+    "cottage": { "label": "Hermit's Cottage", "emoji": "🛖", "rules": { "on": ["forest"], "adjacent": ["water"] } },
+    "peak": { "label": "Dragon's Perch", "emoji": "🐉", "rules": { "on": ["spire"] } },
+    "sanctum": { "label": "Crystal Sanctum", "emoji": "🔮", "rules": { "on": ["spire"], "adjacent": ["barrens"] } },
+    "ruins": { "label": "Fallen Temple", "emoji": "🏛️", "rules": { "on": ["barrens"], "adjacent": ["spire"] } },
+    "lighthouse": { "label": "Lantern Tower", "emoji": "🗼", "rules": { "on": ["meadow"], "adjacent": ["water"] } },
+    "wharf": { "label": "River Wharf", "emoji": "⚓", "rules": { "on": ["meadow", "water"], "adjacent": ["forest"] } },
+    "crossroads": { "label": "Fae Crossroads", "emoji": "🛣️", "rules": { "on": ["forest"], "adjacent": ["meadow", "spire"] } },
+    "mines": { "label": "Gem Caverns", "emoji": "💎", "rules": { "on": ["spire"], "adjacent": ["barrens"] } },
+    "grove": { "label": "Sacred Grove", "emoji": "🌳", "rules": { "on": ["forest"] } },
+    "ford": { "label": "Stone Ford", "emoji": "🪨", "rules": { "on": ["water"], "adjacent": ["meadow"] } }
+  },
+  "templates": {
+    "river_flow": {
+      "weight": 4,
+      "placement": "any",
+      "pattern": [
+        [null, "meadow", "water", "meadow", null],
+        [null, "meadow", "water", "meadow", null],
+        ["forest", "forest", "water", "forest", "forest"],
+        ["forest", "forest", "water", "forest", "forest"],
+        [null, "meadow", "water", "meadow", null]
+      ]
+    },
+    "mountain_heart": {
+      "weight": 2,
+      "placement": "center",
+      "pattern": [
+        ["spire", "spire", "spire"],
+        ["spire", "spire", "spire"],
+        ["forest", "forest", "barrens"]
+      ]
+    }
+  }
+}
