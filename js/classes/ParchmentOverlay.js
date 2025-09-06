@@ -154,8 +154,8 @@ class ParchmentOverlay {
                         if (!color) continue;
 
                         // Soft radial glow
-                        const somenum =32
-                        const radius = somenum + this.noise(-(somenum/4), (somenum/8)); // slight variation
+                        const somenum = 32;
+                        const radius = somenum + this.noise(-(somenum / 4), somenum / 8); // slight variation
                         const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
                         grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${color.alpha * 0.7})`);
                         grad.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
@@ -166,8 +166,8 @@ class ParchmentOverlay {
                 }
             }
 
-                    // Draw soft borders only around mountain (spire) regions
-        this.drawMountainOutlines(sites);
+            // Draw soft borders only around mountain (spire) regions
+            this.drawMountainOutlines(sites);
             ctx.restore();
         });
 
@@ -309,9 +309,147 @@ class ParchmentOverlay {
         }
     }
 
+    // Add this method to your class
+    drawMountainOutline(sites) {
+        const ctx = this.ctx;
+        const w = this.width;
+        const h = this.height;
 
+        // Step 1: Collect all spire sites
+        const spireSites = sites.filter((site) => {
+            const { col, row } = site;
+            return row >= 0 && row < h && col >= 0 && col < w && this.mapData[row][col] === "spire";
+        });
 
-    
+        if (spireSites.length === 0) return;
+
+        // Step 2: Find the convex hull (simplified gift wrapping)
+        const hull = this.convexHull(spireSites);
+        if (hull.length < 3) return; // Need at least 3 points
+
+        // Step 3: Draw a soft, wobbly outline around the hull
+        ctx.strokeStyle = "rgba(80, 80, 80, 0.1)";
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        // Add noise to make it feel hand-drawn
+        const noise = (min, max) => this.seedRandom() * (max - min) + min;
+
+        ctx.beginPath();
+        let lastX, lastY;
+
+        hull.forEach((point, i) => {
+            const x = point.x;
+            const y = point.y;
+
+            // Wobble the line slightly
+            const dx = noise(-6, 6);
+            const dy = noise(-6, 6);
+
+            if (i === 0) {
+                ctx.moveTo(x + dx, y + dy);
+                lastX = x + dx;
+                lastY = y + dy;
+            } else {
+                // Smooth curve between points
+                const midX = (lastX + x) / 2;
+                const midY = (lastY + y) / 2;
+                const cx = midX + noise(-4, 4);
+                const cy = midY + noise(-4, 4);
+
+                ctx.quadraticCurveTo(cx, cy, x + dx, y + dy);
+                lastX = x + dx;
+                lastY = y + dy;
+            }
+        });
+
+        // Close the loop
+        ctx.closePath();
+        ctx.stroke();
+
+        // Optional: second fainter stroke for ink bleed
+        ctx.strokeStyle = "rgba(100, 90, 80, 0.15)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        hull.forEach((point, i) => {
+            const x = point.x;
+            const y = point.y;
+            const dx = noise(-4, 4);
+            const dy = noise(-4, 4);
+            if (i === 0) {
+                ctx.moveTo(x + dx, y + dy);
+            } else {
+                const midX = (lastX + x) / 2;
+                const midY = (lastY + y) / 2;
+                const cx = midX + noise(-3, 3);
+                const cy = midY + noise(-3, 3);
+                ctx.quadraticCurveTo(cx, cy, x + dx, y + dy);
+            }
+            lastX = x + dx;
+            lastY = y + dy;
+        });
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    convexHull(points) {
+        if (points.length < 3) return [];
+
+        // Sort by x, then y
+        const sorted = [...points].sort((a, b) => {
+            if (a.x !== b.x) return a.x - b.x;
+            return a.y - b.y;
+        });
+
+        // Start from leftmost point
+        let hull = [];
+        let current = sorted[0];
+        let prevPoint = null;
+
+        while (true) {
+            // Find next point on hull
+            let next = null;
+            let maxAngle = -Infinity;
+
+            for (const p of points) {
+                if (p === current || p === prevPoint) continue;
+
+                const angle = this.angleBetween(current, p, prevPoint);
+                if (angle > maxAngle) {
+                    maxAngle = angle;
+                    next = p;
+                }
+            }
+
+            if (!next) break;
+
+            hull.push(current);
+            prevPoint = current;
+            current = next;
+        }
+
+        // Return the hull points
+        return hull;
+    }
+
+    angleBetween(a, b, c) {
+        // Angle at b between vectors ba and bc
+        const ba = { x: a.x - b.x, y: a.y - b.y };
+        const bc = { x: c.x - b.x, y: c.y - b.y };
+
+        const dot = ba.x * bc.x + ba.y * bc.y;
+        const magBa = Math.sqrt(ba.x * ba.x + ba.y * ba.y);
+        const magBc = Math.sqrt(bc.x * bc.x + bc.y * bc.y);
+
+        if (magBa === 0 || magBc === 0) return 0;
+
+        const cosAngle = dot / (magBa * magBc);
+        const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+
+        // Return angle in radians
+        return angle;
+    }
 
     addParchmentTexture() {
         const scale = this.renderScale || 1;
