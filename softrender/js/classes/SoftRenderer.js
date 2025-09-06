@@ -95,7 +95,14 @@ class SoftRenderer {
             if (!bgColor || bgColor === "rgb(55, 65, 81)") return; // Skip empty/ignored
 
             const style = this.getStyleForColor(bgColor);
-            // this.drawWatercolorSplotch(x, y, bgColor, style);
+            //drawing algos
+
+            // ✅ Only draw hatches if enabled
+            if (style.hatch) {
+                this.drawHatch(x, y, "#000", style);
+            }
+
+            //this.drawWatercolorSplotch(x, y, bgColor, style);
             this.drawSplat(x, y, bgColor, style);
         });
     }
@@ -108,14 +115,14 @@ class SoftRenderer {
     getStyleForColor(color) {
         const styleMap = {
             // Fantasy
-            "rgb(22, 163, 74)": { scale: 1.25, blur: 8, alpha: 0.4, type: "leafy" }, // forest
-            "rgb(163, 230, 53)": { scale: 1.2, blur: 6, alpha: 0.35, type: "leafy" }, // meadow
+            "rgb(163, 230, 53)": { scale: 1.2, blur: 6, alpha: 0.35, type: "leafy", hatch: true }, // meadow
             "rgb(29, 78, 216)": { scale: 1.15, blur: 10, alpha: 0.5, flow: true }, // water
             "rgb(124, 45, 18)": { scale: 0.85, alpha: 0.3, texture: "ash", type: "cracked" }, // barrens
-            "rgb(119, 119, 119)": { scale: 1.1, offsetY: -4, blur: 6, alpha: 0.5 }, // spire
+            "rgb(119, 119, 119)": { scale: 1.1, offsetY: -4, blur: 6, alpha: 0.5 }, // spirea
             "rgb(29, 78, 216)": { scale: 1.3, blur: 15, alpha: 0.5, flow: true, type: "drip" }, // Water → drip
             "rgb(84, 41, 92)": { scale: 1.4, blur: 12, alpha: 0.4, glow: "#33F0FF", flow: true }, // Cyberpunk → neon drip
             "rgb(124, 45, 18)": { scale: 1.0, alpha: 0.3, texture: "ash", type: "cracked" }, // Barrens → cracked
+            "rgb(22, 163, 74)": { scale: 1.25, blur: 8, alpha: 0.4, type: "leafy", hatch: true }, // forest
 
             // Cyberpunk
             "rgb(84, 41, 92)": { scale: 1.2, blur: 12, alpha: 0.4, glow: "#33F0FF", type: "glow" },
@@ -339,6 +346,73 @@ class SoftRenderer {
         path.closePath();
 
         return path;
+    }
+
+    drawHatch(x, y, color, style) {
+        const { scale = 1.0, blur = 0, alpha = 0.4 } = style;
+        const tx = x * this.tileSize;
+        const ty = y * this.tileSize;
+        const cx = tx + this.tileSize / 2;
+        const cy = ty + this.tileSize / 2;
+
+        // Random angle between -15° and +15°
+        const angle = Math.PI * (Math.random() * 0.3 - 0.15); // -15° to +15°
+
+        // Number of lines: 6–9, but thinner
+        const numLines = 6 + Math.floor(Math.random() * 4);
+        const spacing = 1.02 + Math.random() * 1.8; // 1.2–3px
+
+        const path = new Path2D();
+
+        for (let i = 0; i < numLines; i++) {
+            const offset = i * spacing;
+            const start = {
+                x: cx - this.tileSize * 0.5,
+                y: cy - this.tileSize * 0.5 + offset,
+            };
+            const end = {
+                x: cx + this.tileSize * 0.5,
+                y: cy + this.tileSize * 0.5 + offset,
+            };
+
+            // Rotate line
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            const rotatedStart = {
+                x: start.x * cos - start.y * sin,
+                y: start.x * sin + start.y * cos,
+            };
+            const rotatedEnd = {
+                x: end.x * cos - end.y * sin,
+                y: end.x * sin + end.y * cos,
+            };
+
+            if (i === 0) {
+                const jitterX = (Math.random() - 0.5) * 1.5;
+                const jitterY = (Math.random() - 0.5) * 1.5;
+                rotatedStart.x += jitterX;
+                rotatedStart.y += jitterY;
+                rotatedEnd.x += jitterX;
+                rotatedEnd.y += jitterY;
+                path.moveTo(rotatedStart.x, rotatedStart.y);
+            }
+            path.lineTo(rotatedEnd.x, rotatedEnd.y);
+        }
+
+        // Apply subtle styling
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 0.02 + Math.random() * 0.25; // 0.8–1.3px
+        this.ctx.lineCap = "round";
+        this.ctx.globalAlpha = alpha * 0.7; // Softer than before
+        this.ctx.stroke(path);
+
+        // Optional: light bleed
+        if (blur > 0) {
+            this.ctx.globalAlpha = alpha * 0.9;
+            this.ctx.shadowColor = color;
+            this.ctx.shadowBlur = blur * 0.5;
+            this.ctx.stroke(path);
+        }
     }
 
     drawParchmentTexture() {
