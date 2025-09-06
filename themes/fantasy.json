@@ -29,18 +29,18 @@
     "barrens": {
       "label": "Cursed Lands",
       "colors": ["#7C2D12", "#9A3412", "#C2410C"],
-      "weight": 5,
-      "adjacent": ["spire", "forest", "barrens"]
+      "weight": 1,
+      "adjacent": ["meadow"]
     }
   },
   "locations": {
-    "cottage": { "label": "Hermit's Cottage", "emoji": "🛖", "rules": { "on": ["forest"], "adjacent": ["meadow"] } },
+    "cottage": { "label": "Hermit's Cottage", "emoji": "🏚️", "rules": { "on": ["forest"], "adjacent": ["meadow"] } },
     "peak": { "label": "Dragon's Perch", "emoji": "🐉", "rules": { "on": ["spire"] } },
     "sanctum": { "label": "Crystal Sanctum", "emoji": "🔮", "rules": { "on": ["spire"], "adjacent": ["barrens"] } },
-    "ruins": { "label": "Fallen Temple", "emoji": "🏛️", "rules": { "on": ["forest"], "adjacent": ["forest"] } },
-    "lighthouse": { "label": "Lantern Tower", "emoji": "🗼", "rules": { "on": ["meadow"], "adjacent": ["water"] } },
-    "wharf": { "label": "River Wharf", "emoji": "⚓", "rules": { "on": ["meadow", "spire"], "adjacent": ["water"] } },
-    "crossroads": { "label": "Fae Crossroads", "emoji": "🛣️", "rules": { "on": ["forest"], "adjacent": ["meadow", "spire"] } },
+    "ruins": { "label": "Fallen Temple", "emoji": "🏛️", "rules": { "on": ["barrens"], "adjacent": ["forest"] } },
+    "lighthouse": { "label": "Castle Craig", "emoji": "🏰", "rules": { "on": ["meadow"], "adjacent": ["water"] } },
+    "wharf": { "label": "River Wharf", "emoji": "⚓", "rules": { "on": ["meadow"], "adjacent": ["water"] } },
+    "crossroads": { "label": "Fae Crossroads", "emoji": "🏘️", "rules": { "on": ["forest"], "adjacent": ["meadow", "spire"] } },
     "mines": { "label": "Gem Caverns", "emoji": "💎", "rules": { "on": ["spire"], "adjacent": ["forest"] } },
     "grove": { "label": "Sacred Grove", "emoji": "🌳", "rules": { "on": ["forest"] } },
     "ford": { "label": "Stone Ford", "emoji": "🪨", "rules": { "on": ["meadow"], "adjacent": ["spire"] } }
