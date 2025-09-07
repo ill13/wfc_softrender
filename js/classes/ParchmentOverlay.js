@@ -30,8 +30,12 @@ class ParchmentOverlay {
         return this.seedRandom() * (max - min) + min;
     }
 
-    lerp(a, b, t) { return a + (b - a) * t; }
-    map(v, inMin, inMax, outMin, outMax) { return ((v - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin; }
+    lerp(a, b, t) {
+        return a + (b - a) * t;
+    }
+    map(v, inMin, inMax, outMin, outMax) {
+        return ((v - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
+    }
 
     parseColor(hex) {
         if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return { r: 100, g: 100, b: 100 };
@@ -71,12 +75,14 @@ class ParchmentOverlay {
     }
 
     setMapData(grid) {
-        this.mapData = grid.map(row => row.map(cell => cell.terrain));
+        this.mapData = grid.map((row) => row.map((cell) => cell.terrain));
     }
 
     createCanvas() {
         const tileSizeBase = Math.min(48, 600 / Math.max(this.width, this.height));
-        const scale = 3;
+        //const scale = 2;
+        const superScale = 3; // ← critical for anti-aliasing
+        const scale = (window.devicePixelRatio || 1) * superScale;
         const canvasWidth = this.width * tileSizeBase * scale;
         const canvasHeight = this.height * tileSizeBase * scale;
 
@@ -91,8 +97,8 @@ class ParchmentOverlay {
         this.canvas.style.display = "block";
         this.canvas.style.margin = "0 auto";
         this.canvas.style.outline = "";
-        this.canvas.style.imageRendering = "auto";
-        this.canvas.style.imageRendering = "pixelated"; // Let browser handle smooth downscaling
+        // this.canvas.style.imageRendering = "auto";
+        // this.canvas.style.imageRendering = "pixelated"; // Let browser handle smooth downscaling
         this.canvas.style.width = `${this.width * tileSizeBase}px`;
         this.canvas.style.height = `${this.height * tileSizeBase}px`;
 
@@ -148,15 +154,17 @@ class ParchmentOverlay {
         });
 
         // ✨ Special Effects
-        this.drawWatercolorBackruns(ctx, sites);           // Pigment blooms
-        this.drawForestMossBleed(ctx, sites);             // Mossy forest edges
-        this.drawChalkyMountains(ctx, sites);             // Dry chalk texture on spires
-        this.drawBiomeBleedBorders(ctx, sites);           // General soft borders
-        this.addParchmentTexture();                       // Paper grain
+        this.drawWatercolorBackruns(ctx, sites); // Pigment blooms
+        this.drawForestMossBleed(ctx, sites); // Mossy forest edges
+        this.drawChalkyMountains(ctx, sites); // Dry chalk texture on spires
+        this.drawBiomeBleedBorders(ctx, sites); // General soft borders
+        this.addParchmentTexture(); // Paper grain
         this.drawHandDrawnBorder(ctx, canvasWidth, canvasHeight); // Outer sketch
 
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = "source-over";
+        // At the end of render()
+        this.addFinalBlur();
     }
 
     computeVoronoiSites(canvasWidth, canvasHeight, cols, rows) {
@@ -165,22 +173,102 @@ class ParchmentOverlay {
         const dy = canvasHeight / rows;
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const x = (col + 0.5 + (this.noise(-0.5, 0.5)) * 0.6) * dx;
-                const y = (row + 0.5 + (this.noise(-0.5, 0.5)) * 0.6) * dy;
+                const x = (col + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dx;
+                const y = (row + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dy;
                 sites.push({ x, y, col, row });
             }
         }
         return sites;
     }
 
-    // 🌊 Water with depth shading
+    drawBiomeWatercolorWash_hybrids(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
+        const tileSize = this.tileSizeBase * this.renderScale;
+        const noiseScale = 0.008;
+
+        if (["water", "forest", "meadow"].includes(biomeId)) {
+            // 🌿 Organic Biomes: Soft radial gradient per site
+            sites.forEach((site) => {
+                const { col, row, x, y } = site;
+                if (row >= this.height || col >= this.width || this.mapData[row][col] !== biomeId) return;
+
+                let alpha = color.alpha;
+                const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
+                alpha *= this.lerp(0.75, 1.1, n);
+
+                if (biomeId === "water") {
+                    const clusterCenter = this.getWaterClusterCenter(col, row);
+                    const dx = (col - clusterCenter.cx) * tileSize;
+                    const dy = (row - clusterCenter.cy) * tileSize;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    alpha *= this.map(dist, 0, 180, 1.0, 0.5);
+                }
+
+                const radius = tileSize * 0.9;
+                const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
+                grad.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.6})`);
+                grad.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+                ctx.save();
+                ctx.globalCompositeOperation = "source-over";
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = grad;
+                ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+                ctx.restore();
+            });
+        } else if (["spire", "barrens"].includes(biomeId)) {
+            // ⛰️ Rocky/Arid Biomes: Crisp, textured tile fills
+            const step = Math.max(2, Math.floor(tileSize / 12)); // High-res fill
+            const baseAlpha = color.alpha * 0.9;
+
+            for (let row = 0; row < this.height; row++) {
+                const step = 10;
+                const noiseScale = 0.015;
+
+                let baseMin = 0.3;
+                let baseMax = 0.6;
+                let useDepthShading = true;
+
+                if (biomeId === "water") {
+                    baseMin = 0.4;
+                    baseMax = 0.75;
+                    useDepthShading = true;
+                }
+
+                for (let y = 0; y < canvasHeight; y += step) {
+                    for (let x = 0; x < canvasWidth; x += step) {
+                        const site = this.findClosestSite(sites, x, y);
+                        const { col, row } = site;
+                        if (row < 0 || row >= this.height || col < 0 || col >= this.width || this.mapData[row][col] !== biomeId) continue;
+
+                        const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
+                        let alpha = this.lerp(baseMin, baseMax, n) * color.alpha;
+
+                        if (useDepthShading) {
+                            const clusterCenter = this.getWaterClusterCenter(col, row);
+                            const dx = (col - clusterCenter.cx) * 48;
+                            const dy = (row - clusterCenter.cy) * 48;
+                            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+                            const falloff = this.map(distFromCenter, 0, 120, 1.0, 0.6);
+                            alpha *= falloff;
+                        }
+
+                        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+                        ctx.fillRect(x, y, step, step);
+                    }
+                }
+            }
+        }
+    }
+
+    // 🌊 Water with depth shading (good one)
     drawBiomeWatercolorWash(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
-        const step = 6;
+        const step = 7; // 7 is good
         const noiseScale = 0.015;
 
         let baseMin = 0.3;
         let baseMax = 0.6;
-        let useDepthShading = false;
+        let useDepthShading = true;
 
         if (biomeId === "water") {
             baseMin = 0.4;
@@ -226,7 +314,12 @@ class ParchmentOverlay {
 
             if (this.mapData[row]?.[col] === "water") {
                 waterCells.push({ col, row });
-                for (const [dx, dy] of [[-1,0], [1,0], [0,-1], [0,1]]) {
+                for (const [dx, dy] of [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                ]) {
                     queue.push({ col: col + dx, row: row + dy, dist: dist + 1 });
                 }
             }
@@ -287,8 +380,10 @@ class ParchmentOverlay {
                 if (row < 0 || row >= h || col < 0 || col >= w || this.mapData[row][col] !== "forest") continue;
 
                 const neighbors = [
-                    [col - 1, row], [col + 1, row],
-                    [col, row - 1], [col, row + 1]
+                    [col - 1, row],
+                    [col + 1, row],
+                    [col, row - 1],
+                    [col, row + 1],
                 ];
                 const isEdge = neighbors.some(([nx, ny]) => {
                     if (nx < 0 || ny < 0 || nx >= w || ny >= h) return false;
@@ -314,7 +409,7 @@ class ParchmentOverlay {
         ctx.globalCompositeOperation = "color-dodge"; // Lighten effect
         ctx.globalAlpha = 0.15;
 
-        sites.forEach(site => {
+        sites.forEach((site) => {
             const { col, row } = site;
             if (row >= this.height || col >= this.width || this.mapData[row][col] !== "spire") return;
 
@@ -383,9 +478,7 @@ class ParchmentOverlay {
                 ctx.arc(rx, ry, r, 0, Math.PI * 2);
                 ctx.fill();
             }
-        }
-
-        else if (biomeId === "water") {
+        } else if (biomeId === "water") {
             for (let i = 0; i < 4; i++) {
                 const dy = 8 * scale + i * 12 * scale;
                 ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 + this.noise(0, 0.1)})`;
@@ -395,7 +488,7 @@ class ParchmentOverlay {
                 const amp = this.noise(-10, 10) * scale;
                 const offset = this.noise(-8, 8) * scale;
                 ctx.quadraticCurveTo(x + offset, y + dy + amp, x + 22 * scale, y + dy);
-               // ctx.stroke();
+                // ctx.stroke();
             }
             for (let i = 0; i < 2; i++) {
                 const yy = y + this.noise(10, 40) * scale;
@@ -407,9 +500,7 @@ class ParchmentOverlay {
                 ctx.lineTo(x + 20 * scale, yy);
                 ctx.stroke();
             }
-        }
-
-        else if (biomeId === "forest") {
+        } else if (biomeId === "forest") {
             for (let i = 0; i < 15; i++) {
                 const rx = x + this.noise(-24, 24) * scale;
                 const ry = y + this.noise(-24, 24) * scale;
@@ -419,11 +510,9 @@ class ParchmentOverlay {
                 ctx.arc(rx, ry, dotSize, 0, Math.PI * 2);
                 ctx.fill();
             }
-        }
-
-        else if (biomeId === "spire") {
+        } else if (biomeId === "spire") {
             for (let i = 0; i < 3; i++) {
-                const dy = -8* scale + i * 15 * scale;
+                const dy = -8 * scale + i * 15 * scale;
                 ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
                 ctx.lineWidth = 2 * scale;
                 const startX = x - 20 * scale + this.noise(0, 9) * scale;
@@ -438,9 +527,7 @@ class ParchmentOverlay {
                 ctx.lineTo(endX, y + dy);
                 ctx.stroke();
             }
-        }
-
-        else if (biomeId === "barrens") {
+        } else if (biomeId === "barrens") {
             for (let i = 0; i < 7; i++) {
                 const rx = x + this.noise(-24, 24) * scale;
                 const ry = y + this.noise(-24, 24) * scale;
@@ -466,7 +553,10 @@ class ParchmentOverlay {
 
     // 🎨 Noise & Math
     fbm(x, y, octaves = 3, persistence = 0.5) {
-        let value = 0, amplitude = 1, frequency = 1, max = 0;
+        let value = 0,
+            amplitude = 1,
+            frequency = 1,
+            max = 0;
         for (let i = 0; i < octaves; i++) {
             value += this.simplex2(x * frequency, y * frequency) * amplitude;
             max += amplitude;
@@ -585,7 +675,12 @@ class ParchmentOverlay {
                 const { col, row } = site;
                 if (row < 0 || row >= h || col < 0 || col >= w) continue;
 
-                const neighbors = [[col-1,row],[col+1,row],[col,row-1],[col,row+1]];
+                const neighbors = [
+                    [col - 1, row],
+                    [col + 1, row],
+                    [col, row - 1],
+                    [col, row + 1],
+                ];
                 const isEdge = neighbors.some(([nx, ny]) => {
                     if (nx < 0 || ny < 0 || nx >= w || ny >= h) return false;
                     return this.mapData[ny][nx] !== this.mapData[row][col];
@@ -596,10 +691,67 @@ class ParchmentOverlay {
                     if (!color) continue;
                     const alpha = this.noise(0.2, 0.4);
                     ctx.fillStyle = `rgba(80, 70, 60, ${alpha})`;
-                   ctx.fillRect(x - 1, y - 1, 2, 2);
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
                 }
             }
         }
         ctx.restore();
+    }
+
+    addFinalBlur() {
+        const ctx = this.ctx;
+        const canvas = this.canvas;
+
+        // Create offscreen buffer for blur
+        const tempCanvas = document.createElement("canvas");
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+
+        // Draw current canvas to temp (blurring happens via scaling)
+        tempCtx.drawImage(canvas, 0, 0);
+
+        // Reduce size slightly and scale back up with smoothing
+        const shrink = 2;
+        const smallW = canvas.width / shrink;
+        const smallH = canvas.height / shrink;
+
+        const smallCanvas = document.createElement("canvas");
+        const smallCtx = smallCanvas.getContext("2d");
+        smallCanvas.width = smallW;
+        smallCanvas.height = smallH;
+
+        // Shrink with smoothing
+        smallCtx.imageSmoothingEnabled = true;
+        smallCtx.imageSmoothingQuality = "high";
+        smallCtx.drawImage(tempCanvas, 0, 0, smallW, smallH);
+
+        // Blur slightly
+        //smallCtx.filter = "blur(0.8px)";
+        smallCtx.drawImage(smallCanvas, 0, 0, smallW, smallH);
+
+        // Draw back to main canvas, scaled up smoothly
+        ctx.filter = "none";
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, canvas.width, canvas.height);
+
+        // Optional: very light noise to break up banding
+        //this.addSubtleNoise(ctx, canvas.width, canvas.height);
+    }
+
+    addSubtleNoise(ctx, width, height) {
+        const imageData = ctx.createImageData(width, height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const noise = this.noise(-10, 10);
+            data[i + 0] += noise; // R
+            data[i + 1] += noise; // G
+            data[i + 2] += noise; // B
+            // Alpha unchanged
+        }
+
+        ctx.putImageData(imageData, 0, 0);
     }
 }
