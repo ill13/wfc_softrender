@@ -493,7 +493,7 @@ class ParchmentOverlay {
             for (let i = 0; i < 2; i++) {
                 const yy = y + this.noise(10, 40) * scale;
                 ctx.strokeStyle = `rgba(255, 255, 255, 0.12)`;
-                ctx.lineWidth = 3 * scale;
+                ctx.lineWidth = 1 * scale;
                 ctx.lineCap = "round";
                 ctx.beginPath();
                 ctx.moveTo(x - 20 * scale, yy);
@@ -501,7 +501,7 @@ class ParchmentOverlay {
                 ctx.stroke();
             }
         } else if (biomeId === "forest") {
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 21; i++) {
                 const rx = x + this.noise(-24, 24) * scale;
                 const ry = y + this.noise(-24, 24) * scale;
                 const dotSize = (2 + this.noise(0, 3)) * scale;
