@@ -56,14 +56,13 @@ class ParchmentOverlay {
         });
 
         // 💧 OVERRIDE: Boost water presence
-    if (this.biomeColors.water) {
-        // Richer teal-blue, slightly desaturated for painterly feel
-        this.biomeColors.water.r = 80;   // was likely ~150+
-        this.biomeColors.water.g = 140;  // more green-blue
-        this.biomeColors.water.b = 255;  // deeper sky blue
-        this.biomeColors.water.alpha = 1; // stronger presence
-    }
-
+        if (this.biomeColors.water) {
+            // Richer teal-blue, slightly desaturated for painterly feel
+            this.biomeColors.water.r = 80; // was likely ~150+
+            this.biomeColors.water.g = 140; // more green-blue
+            this.biomeColors.water.b = 255; // deeper sky blue
+            this.biomeColors.water.alpha = 1; // stronger presence
+        }
 
         this.biomeOrder = ["barrens", "water", "meadow", "forest", "spire"].filter((id) => this.biomeColors[id]);
     }
@@ -84,13 +83,20 @@ class ParchmentOverlay {
 
     createCanvas() {
         const tileSizeBase = Math.min(48, 600 / Math.max(this.width, this.height));
-        const scale = 2;
+        const scale = 2; // Render at 2x for crispness
+
         const canvasWidth = this.width * tileSizeBase * scale;
         const canvasHeight = this.height * tileSizeBase * scale;
 
         this.canvas = document.createElement("canvas");
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
+
+        // Set *actual* pixel dimensions
+        this.canvas.style.width = `${this.width * tileSizeBase}px`;
+        this.canvas.style.height = `${this.height * tileSizeBase}px`;
+
+        // Styling
         this.canvas.style.position = "absolute";
         this.canvas.style.top = "0";
         this.canvas.style.left = "0";
@@ -99,16 +105,19 @@ class ParchmentOverlay {
         this.canvas.style.display = "block";
         this.canvas.style.margin = "0 auto";
         this.canvas.style.outline = "";
-        this.canvas.style.imageRendering = "auto";
-        this.canvas.style.width = `${this.width * tileSizeBase}px`;
-        this.canvas.style.height = `${this.height * tileSizeBase}px`;
+
+        // 🔍 Enable smooth downscaling (browser blurs slightly when shrinking)
+        this.canvas.style.imageRendering = "auto"; // Let browser smooth
+        // Alternative: "crisp-edges" or "-webkit-optimize-contrast" if you prefer sharper
 
         this.ctx = this.canvas.getContext("2d");
         this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = "high";
+        this.ctx.imageSmoothingQuality = "high"; // Use high-quality scaling
 
+        // Export for use in rendering
         this.renderScale = scale;
         this.tileSizeBase = tileSizeBase;
+
         return this.canvas;
     }
 
@@ -158,6 +167,10 @@ class ParchmentOverlay {
             this.drawBiomeArtAt(site.x, site.y, biomeId, size);
         });
 
+
+        // ✨ Add pigment blooms
+    this.drawWatercolorBackruns(ctx, sites);
+
         // Add paper texture with multiply blend
         this.addParchmentTexture();
 
@@ -167,6 +180,13 @@ class ParchmentOverlay {
         // Reset
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = "source-over";
+
+        // At the very end of render(), after everything else:
+        ctx.save();
+        ctx.filter = "blur(0.5px)";
+        ctx.drawImage(this.canvas, 0, 0); // redraw with blur
+        ctx.filter = "none";
+        ctx.restore();
     }
 
     computeVoronoiSites(canvasWidth, canvasHeight, cols, rows) {
@@ -184,26 +204,116 @@ class ParchmentOverlay {
     }
 
     drawBiomeWatercolorWash(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
-    const step = 6;
-    const noiseScale = 0.015;
+        const step = 6;
+        const noiseScale = 0.015;
 
-    // Use slightly higher alpha range for water
-    const baseMin = biomeId === "water" ? 0.4 : 0.3;
-    const baseMax = biomeId === "water" ? 0.7 : 0.6;
+        // Base alpha ranges
+        let baseMin = 0.3;
+        let baseMax = 0.6;
+        let useDepthShading = false;
 
-    for (let y = 0; y < canvasHeight; y += step) {
-        for (let x = 0; x < canvasWidth; x += step) {
-            const site = this.findClosestSite(sites, x, y);
-            const { col, row } = site;
-            if (row >= 0 && row < this.height && col >= 0 && col < this.width && this.mapData[row][col] === biomeId) {
+        if (biomeId === "water") {
+            baseMin = 0.4;
+            baseMax = 0.75;
+            useDepthShading = true; // Enable depth effect
+        }
+
+        for (let y = 0; y < canvasHeight; y += step) {
+            for (let x = 0; x < canvasWidth; x += step) {
+                const site = this.findClosestSite(sites, x, y);
+                const { col, row } = site;
+                if (row < 0 || row >= this.height || col < 0 || col >= this.width || this.mapData[row][col] !== biomeId) continue;
+
                 const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
-                const alpha = this.lerp(baseMin, baseMax, n) * color.alpha;
+                let alpha = this.lerp(baseMin, baseMax, n) * color.alpha;
+
+                // 💧 Water depth shading: darker in center of water mass
+                if (useDepthShading) {
+                    const clusterCenter = this.getWaterClusterCenter(col, row);
+                    const dx = (col - clusterCenter.cx) * 48; // Approx cell coords
+                    const dy = (row - clusterCenter.cy) * 48;
+                    const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+                    const falloff = this.map(distFromCenter, 0, 120, 1.0, 0.6); // 2–3 tiles radius
+                    alpha *= falloff; // Reduce alpha (lighter) at edges
+                }
+
                 ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
                 ctx.fillRect(x, y, step, step);
             }
         }
     }
-}
+
+    getWaterClusterCenter(col, row) {
+        const maxDist = 3; // Search within 3 tiles
+        const queue = [{ col, row, dist: 0 }];
+        const visited = new Set();
+        const waterCells = [];
+
+        while (queue.length > 0) {
+            const { col, row, dist } = queue.shift();
+            const key = `${col},${row}`;
+            if (visited.has(key) || dist > maxDist) continue;
+            visited.add(key);
+
+            if (this.mapData[row]?.[col] === "water") {
+                waterCells.push({ col, row });
+                // Add neighbors
+                for (const [dx, dy] of [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                ]) {
+                    queue.push({ col: col + dx, row: row + dy, dist: dist + 1 });
+                }
+            }
+        }
+
+        if (waterCells.length === 0) {
+            return { cx: col, cy: row };
+        }
+
+        const cx = waterCells.reduce((sum, c) => sum + c.col, 0) / waterCells.length;
+        const cy = waterCells.reduce((sum, c) => sum + c.row, 0) / waterCells.length;
+
+        return { cx, cy };
+    }
+
+    drawWatercolorBackruns(ctx, sites) {
+        const count = this.width * this.height * 0.3; // ~1–2 per few tiles
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+
+        for (let i = 0; i < count; i++) {
+            const site = sites[Math.floor(this.noise(0, sites.length))];
+            const { col, row } = site;
+            if (row >= this.height || col >= this.width) continue;
+
+            // Only on water or forest (moist areas)
+            const biomeId = this.mapData[row][col];
+            if (!["water", "forest", "meadow"].includes(biomeId)) continue;
+
+            const x = site.x + this.noise(-20, 20);
+            const y = site.y + this.noise(-20, 20);
+            const color = this.biomeColors[biomeId];
+
+            // Dark center (pigment concentration)
+            const r1 = this.noise(8, 14);
+            const grad1 = ctx.createRadialGradient(x, y, 0, x, y, r1);
+            grad1.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`);
+            grad1.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`);
+            ctx.fillStyle = grad1;
+            ctx.fillRect(x - r1, y - r1, r1 * 2, r1 * 2);
+
+            // Light outer halo (backrun edge)
+            const r2 = r1 * 1.8;
+            const grad2 = ctx.createRadialGradient(x, y, r1, x, y, r2);
+            grad2.addColorStop(0, `rgba(255, 255, 255, 0)`);
+            grad2.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`);
+            ctx.fillStyle = grad2;
+            ctx.fillRect(x - r2, y - r2, r2 * 2, r2 * 2);
+        }
+    }
 
     drawBiomeBrushstrokes(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
         const strokeCount = this.width * this.height * 0.8;
@@ -298,7 +408,7 @@ class ParchmentOverlay {
                     ctx.beginPath();
                     ctx.moveTo(x - 20 * scale, yy);
                     ctx.lineTo(x + 20 * scale, yy);
-                   // ctx.stroke();
+                    // ctx.stroke();
                 }
             }
         } else if (biomeId === "forest") {
@@ -315,6 +425,15 @@ class ParchmentOverlay {
             for (let i = 0; i < 3; i++) {
                 const dy = -16 * scale + i * 15 * scale;
                 ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
+
+                const baseMin = 0.3;
+                const baseMax = 0.7;
+
+                const noiseScale = 0.015;
+                const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
+                const alpha = this.lerp(baseMin, baseMax, n) * 0.4;
+                ctx.strokeStyle = `rgba(100, 100, 100, ${alpha})`;
+
                 ctx.lineWidth = 2 * scale;
                 const startX = x - 20 * scale + this.noise(0, 9) * scale;
                 const endX = x + 5 * scale + this.noise(0, 15) * scale;
