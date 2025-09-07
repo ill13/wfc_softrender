@@ -1,5 +1,5 @@
 // js/classes/ParchmentOverlay.js
-// 🎨 Cozy Watercolor Map Overlay – Full Painterly Style
+// 🎨 Watercolor/Painterly Style Parchment Overlay
 class ParchmentOverlay {
     constructor(width, height, themeName, seed) {
         this.width = width;
@@ -15,6 +15,7 @@ class ParchmentOverlay {
         this.renderScale = 1;
         this.tileSizeBase = 48;
 
+        // Deterministic PRNG
         this.seedRandom = this.makeSeededRandom(seed);
     }
 
@@ -30,19 +31,14 @@ class ParchmentOverlay {
         return this.seedRandom() * (max - min) + min;
     }
 
-    lerp(a, b, t) { return a + (b - a) * t; }
-    map(v, inMin, inMax, outMin, outMax) { return ((v - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin; }
+    // Linear interpolation helper
+    lerp(a, b, t) {
+        return a + (b - a) * t;
+    }
 
-    parseColor(hex) {
-        if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return { r: 100, g: 100, b: 100 };
-        let h = hex.slice(1);
-        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-        if (h.length !== 6) return { r: 100, g: 100, b: 100 };
-        return {
-            r: parseInt(h.slice(0, 2), 16) || 100,
-            g: parseInt(h.slice(2, 4), 16) || 100,
-            b: parseInt(h.slice(4, 6), 16) || 100,
-        };
+    // Map value from one range to another
+    map(value, inMin, inMax, outMin, outMax) {
+        return ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
     }
 
     initFromTheme(theme) {
@@ -59,30 +55,48 @@ class ParchmentOverlay {
             };
         });
 
-        // 💧 Water: richer, deeper
+        // 💧 OVERRIDE: Boost water presence
         if (this.biomeColors.water) {
-            this.biomeColors.water.r = 80;
-            this.biomeColors.water.g = 140;
-            this.biomeColors.water.b = 255;
-            this.biomeColors.water.alpha = 0.85;
+            // Richer teal-blue, slightly desaturated for painterly feel
+            this.biomeColors.water.r = 80; // was likely ~150+
+            this.biomeColors.water.g = 140; // more green-blue
+            this.biomeColors.water.b = 255; // deeper sky blue
+            this.biomeColors.water.alpha = 1; // stronger presence
         }
 
         this.biomeOrder = ["barrens", "water", "meadow", "forest", "spire"].filter((id) => this.biomeColors[id]);
     }
 
-    setMapData(grid) {
-        this.mapData = grid.map(row => row.map(cell => cell.terrain));
+    parseColor(hex) {
+        if (!hex || typeof hex !== "string" || !hex.startsWith("#")) {
+            return { r: 100, g: 100, b: 100 };
+        }
+        let h = hex.slice(1);
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        if (h.length !== 6) return { r: 100, g: 100, b: 100 };
+        return {
+            r: parseInt(h.slice(0, 2), 16) || 100,
+            g: parseInt(h.slice(2, 4), 16) || 100,
+            b: parseInt(h.slice(4, 6), 16) || 100,
+        };
     }
 
     createCanvas() {
         const tileSizeBase = Math.min(48, 600 / Math.max(this.width, this.height));
-        const scale = 3;
+        const scale = 2; // Render at 2x for crispness
+
         const canvasWidth = this.width * tileSizeBase * scale;
         const canvasHeight = this.height * tileSizeBase * scale;
 
         this.canvas = document.createElement("canvas");
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
+
+        // Set *actual* pixel dimensions
+        this.canvas.style.width = `${this.width * tileSizeBase}px`;
+        this.canvas.style.height = `${this.height * tileSizeBase}px`;
+
+        // Styling
         this.canvas.style.position = "absolute";
         this.canvas.style.top = "0";
         this.canvas.style.left = "0";
@@ -91,17 +105,19 @@ class ParchmentOverlay {
         this.canvas.style.display = "block";
         this.canvas.style.margin = "0 auto";
         this.canvas.style.outline = "";
-        this.canvas.style.imageRendering = "auto";
-        this.canvas.style.imageRendering = "pixelated"; // Let browser handle smooth downscaling
-        this.canvas.style.width = `${this.width * tileSizeBase}px`;
-        this.canvas.style.height = `${this.height * tileSizeBase}px`;
+
+        // 🔍 Enable smooth downscaling (browser blurs slightly when shrinking)
+        this.canvas.style.imageRendering = "auto"; // Let browser smooth
+        // Alternative: "crisp-edges" or "-webkit-optimize-contrast" if you prefer sharper
 
         this.ctx = this.canvas.getContext("2d");
         this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = "high";
+        this.ctx.imageSmoothingQuality = "high"; // Use high-quality scaling
 
+        // Export for use in rendering
         this.renderScale = scale;
         this.tileSizeBase = tileSizeBase;
+
         return this.canvas;
     }
 
@@ -114,16 +130,17 @@ class ParchmentOverlay {
         const canvasHeight = this.canvas.height;
         const ctx = this.ctx;
 
+        // Clear
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
         // Base parchment
         ctx.fillStyle = "#f0cb9bff";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Generate soft sites
+        // Generate soft sites (cell centers with jitter)
         const sites = this.computeVoronoiSites(canvasWidth, canvasHeight, w, h);
 
-        // Draw biomes in order
+        // Draw biomes in order using brushstrokes and soft washes
         this.biomeOrder.forEach((biomeId) => {
             const color = this.biomeColors[biomeId];
             if (!color) return;
@@ -137,7 +154,10 @@ class ParchmentOverlay {
             ctx.restore();
         });
 
-        // Draw biome-specific art at centers
+        // Add soft biome borders (wet-edge bleed)
+        this.drawBiomeBleedBorders(ctx, sites);
+
+        // Draw biome-specific doodles at centers
         const size = canvasWidth / this.width;
         sites.forEach((site) => {
             const { col, row } = site;
@@ -147,16 +167,25 @@ class ParchmentOverlay {
             this.drawBiomeArtAt(site.x, site.y, biomeId, size);
         });
 
-        // ✨ Special Effects
-        this.drawWatercolorBackruns(ctx, sites);           // Pigment blooms
-        this.drawForestMossBleed(ctx, sites);             // Mossy forest edges
-        this.drawChalkyMountains(ctx, sites);             // Dry chalk texture on spires
-        this.drawBiomeBleedBorders(ctx, sites);           // General soft borders
-        this.addParchmentTexture();                       // Paper grain
-        this.drawHandDrawnBorder(ctx, canvasWidth, canvasHeight); // Outer sketch
+        // ✨ Add pigment blooms
+        this.drawWatercolorBackruns(ctx, sites);
 
+        // Add paper texture with multiply blend
+        this.addParchmentTexture();
+
+        // Final soft border (hand-drawn ink)
+        this.drawHandDrawnBorder(ctx, canvasWidth, canvasHeight);
+
+        // Reset
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = "source-over";
+
+        // At the very end of render(), after everything else:
+        ctx.save();
+        ctx.filter = "blur(0.5px)";
+        ctx.drawImage(this.canvas, 0, 0); // redraw with blur
+        ctx.filter = "none";
+        ctx.restore();
     }
 
     computeVoronoiSites(canvasWidth, canvasHeight, cols, rows) {
@@ -165,19 +194,19 @@ class ParchmentOverlay {
         const dy = canvasHeight / rows;
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const x = (col + 0.5 + (this.noise(-0.5, 0.5)) * 0.6) * dx;
-                const y = (row + 0.5 + (this.noise(-0.5, 0.5)) * 0.6) * dy;
+                const x = (col + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dx;
+                const y = (row + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dy;
                 sites.push({ x, y, col, row });
             }
         }
         return sites;
     }
 
-    // 🌊 Water with depth shading
     drawBiomeWatercolorWash(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
         const step = 6;
         const noiseScale = 0.015;
 
+        // Base alpha ranges
         let baseMin = 0.3;
         let baseMax = 0.6;
         let useDepthShading = false;
@@ -185,7 +214,7 @@ class ParchmentOverlay {
         if (biomeId === "water") {
             baseMin = 0.4;
             baseMax = 0.75;
-            useDepthShading = true;
+            useDepthShading = true; // Enable depth effect
         }
 
         for (let y = 0; y < canvasHeight; y += step) {
@@ -197,13 +226,14 @@ class ParchmentOverlay {
                 const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
                 let alpha = this.lerp(baseMin, baseMax, n) * color.alpha;
 
+                // 💧 Water depth shading: darker in center of water mass
                 if (useDepthShading) {
                     const clusterCenter = this.getWaterClusterCenter(col, row);
-                    const dx = (col - clusterCenter.cx) * 48;
+                    const dx = (col - clusterCenter.cx) * 48; // Approx cell coords
                     const dy = (row - clusterCenter.cy) * 48;
                     const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                    const falloff = this.map(distFromCenter, 0, 120, 1.0, 0.6);
-                    alpha *= falloff;
+                    const falloff = this.map(distFromCenter, 0, 120, 1.0, 0.6); // 2–3 tiles radius
+                    alpha *= falloff; // Reduce alpha (lighter) at edges
                 }
 
                 ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
@@ -213,7 +243,7 @@ class ParchmentOverlay {
     }
 
     getWaterClusterCenter(col, row) {
-        const maxDist = 3;
+        const maxDist = 3; // Search within 3 tiles
         const queue = [{ col, row, dist: 0 }];
         const visited = new Set();
         const waterCells = [];
@@ -226,20 +256,64 @@ class ParchmentOverlay {
 
             if (this.mapData[row]?.[col] === "water") {
                 waterCells.push({ col, row });
-                for (const [dx, dy] of [[-1,0], [1,0], [0,-1], [0,1]]) {
+                // Add neighbors
+                for (const [dx, dy] of [
+                    [-1, 0],
+                    [1, 0],
+                    [0, -1],
+                    [0, 1],
+                ]) {
                     queue.push({ col: col + dx, row: row + dy, dist: dist + 1 });
                 }
             }
         }
 
-        if (waterCells.length === 0) return { cx: col, cy: row };
+        if (waterCells.length === 0) {
+            return { cx: col, cy: row };
+        }
 
         const cx = waterCells.reduce((sum, c) => sum + c.col, 0) / waterCells.length;
         const cy = waterCells.reduce((sum, c) => sum + c.row, 0) / waterCells.length;
+
         return { cx, cy };
     }
 
-    // 🖌️ General brushstrokes (used by all biomes)
+    drawWatercolorBackruns(ctx, sites) {
+        const count = this.width * this.height * 0.3; // ~1–2 per few tiles
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+
+        for (let i = 0; i < count; i++) {
+            const site = sites[Math.floor(this.noise(0, sites.length))];
+            const { col, row } = site;
+            if (row >= this.height || col >= this.width) continue;
+
+            // Only on water or forest (moist areas)
+            const biomeId = this.mapData[row][col];
+            if (!["water", "forest", "meadow"].includes(biomeId)) continue;
+
+            const x = site.x + this.noise(-20, 20);
+            const y = site.y + this.noise(-20, 20);
+            const color = this.biomeColors[biomeId];
+
+            // Dark center (pigment concentration)
+            const r1 = this.noise(8, 14);
+            const grad1 = ctx.createRadialGradient(x, y, 0, x, y, r1);
+            grad1.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`);
+            grad1.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`);
+            ctx.fillStyle = grad1;
+            ctx.fillRect(x - r1, y - r1, r1 * 2, r1 * 2);
+
+            // Light outer halo (backrun edge)
+            const r2 = r1 * 1.8;
+            const grad2 = ctx.createRadialGradient(x, y, r1, x, y, r2);
+            grad2.addColorStop(0, `rgba(255, 255, 255, 0)`);
+            grad2.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`);
+            ctx.fillStyle = grad2;
+            ctx.fillRect(x - r2, y - r2, r2 * 2, r2 * 2);
+        }
+    }
+
     drawBiomeBrushstrokes(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
         const strokeCount = this.width * this.height * 0.8;
         for (let i = 0; i < strokeCount; i++) {
@@ -268,148 +342,75 @@ class ParchmentOverlay {
         }
     }
 
-    // 🌿 Forest moss bleed at edges
-    drawForestMossBleed(ctx, sites) {
+    drawBiomeBleedBorders(ctx, sites) {
         const w = this.width;
         const h = this.height;
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
-        const step = 8;
+        const step = 4;
 
         ctx.save();
         ctx.globalCompositeOperation = "multiply";
-        ctx.globalAlpha = 0.22;
+        ctx.globalAlpha = 0.15;
 
-        for (let y = 0; y < canvasHeight; y += step) {
-            for (let x = 0; x < canvasWidth; x += step) {
+        for (let y = step / 2; y < canvasHeight; y += step) {
+            for (let x = step / 2; x < canvasWidth; x += step) {
                 const site = this.findClosestSite(sites, x, y);
                 const { col, row } = site;
-                if (row < 0 || row >= h || col < 0 || col >= w || this.mapData[row][col] !== "forest") continue;
+                if (row < 0 || row >= h || col < 0 || col >= w) continue;
 
                 const neighbors = [
-                    [col - 1, row], [col + 1, row],
-                    [col, row - 1], [col, row + 1]
+                    [col - 1, row],
+                    [col + 1, row],
+                    [col, row - 1],
+                    [col, row + 1],
                 ];
                 const isEdge = neighbors.some(([nx, ny]) => {
                     if (nx < 0 || ny < 0 || nx >= w || ny >= h) return false;
-                    return this.mapData[ny][nx] !== "forest";
+                    return this.mapData[ny][nx] !== this.mapData[row][col];
                 });
 
                 if (isEdge) {
-                    const r = this.noise(4, 9);
-                    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-                    grad.addColorStop(0, "rgba(60, 110, 60, 0.3)");
-                    grad.addColorStop(1, "rgba(60, 110, 60, 0)");
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+                    const color = this.biomeColors[this.mapData[row][col]];
+                    if (!color) continue;
+                    const alpha = this.noise(0.2, 0.4);
+                    ctx.fillStyle = `rgba(80, 70, 60, ${alpha})`; // warm ink bleed
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
                 }
             }
         }
         ctx.restore();
     }
 
-    // ⛰️ Chalky texture on mountains (spires)
-    drawChalkyMountains(ctx, sites) {
-        ctx.save();
-        ctx.globalCompositeOperation = "color-dodge"; // Lighten effect
-        ctx.globalAlpha = 0.15;
-
-        sites.forEach(site => {
-            const { col, row } = site;
-            if (row >= this.height || col >= this.width || this.mapData[row][col] !== "spire") return;
-
-            const count = 8;
-            for (let i = 0; i < count; i++) {
-                const x = site.x + this.noise(-20, 20);
-                const y = site.y + this.noise(-20, 20);
-                const len = this.noise(6, 14);
-                const angle = this.noise(0, Math.PI * 2);
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-                ctx.lineWidth = this.noise(0.5, 1.5);
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
-                ctx.stroke();
-            }
-        });
-        ctx.restore();
-    }
-
-    // 🌼 Watercolor backruns (pigment blooms)
-    drawWatercolorBackruns(ctx, sites) {
-        const count = this.width * this.height * 0.3;
-        for (let i = 0; i < count; i++) {
-            const site = sites[Math.floor(this.noise(0, sites.length))];
-            const { col, row } = site;
-            if (row >= this.height || col >= this.width) continue;
-
-            const biomeId = this.mapData[row][col];
-            if (!["water", "forest", "meadow"].includes(biomeId)) continue;
-
-            const x = site.x + this.noise(-20, 20);
-            const y = site.y + this.noise(-20, 20);
-            const color = this.biomeColors[biomeId];
-
-            const r1 = this.noise(8, 14);
-            const grad1 = ctx.createRadialGradient(x, y, 0, x, y, r1);
-            grad1.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`);
-            grad1.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`);
-            ctx.fillStyle = grad1;
-            ctx.fillRect(x - r1, y - r1, r1 * 2, r1 * 2);
-
-            const r2 = r1 * 1.8;
-            const grad2 = ctx.createRadialGradient(x, y, r1, x, y, r2);
-            grad2.addColorStop(0, `rgba(255, 255, 255, 0)`);
-            grad2.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`);
-            ctx.fillStyle = grad2;
-            ctx.fillRect(x - r2, y - r2, r2 * 2, r2 * 2);
-        }
-    }
-
-    // 🌱 Meadow stippling (like sponge dab)
     drawBiomeArtAt(x, y, biomeId, size) {
         const ctx = this.ctx;
         const scale = size / 48;
 
-        if (biomeId === "meadow") {
-            for (let i = 0; i < 12; i++) {
-                const rx = x + this.noise(-20, 20) * scale;
-                const ry = y + this.noise(-20, 20) * scale;
-                const r = this.noise(1.5, 4) * scale;
-                const alpha = this.noise(0.2, 0.4);
-                ctx.fillStyle = `rgba(163, 230, 53, ${alpha})`;
+        if (biomeId === "water") {
+            for (let i = 0; i < 3; i++) {
+                const dy = 10 * scale + i * 15 * scale;
+                ctx.strokeStyle = `rgba(235, 238, 243, 0.36)`;
+                ctx.lineWidth = 1 * scale;
                 ctx.beginPath();
-                ctx.arc(rx, ry, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+                ctx.moveTo(x - 20 * scale, y + dy);
+                const amp = this.noise(-18, 18) * scale;
+                const offset = this.noise(-10, 10) * scale;
+                ctx.quadraticCurveTo(x + offset, y + dy + amp, x + 20 * scale, y + dy);
+                // ctx.stroke();
 
-        else if (biomeId === "water") {
-            for (let i = 0; i < 4; i++) {
-                const dy = 8 * scale + i * 12 * scale;
-                ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 + this.noise(0, 0.1)})`;
-                ctx.lineWidth = 1.2 * scale;
-                ctx.beginPath();
-                ctx.moveTo(x - 22 * scale, y + dy);
-                const amp = this.noise(-10, 10) * scale;
-                const offset = this.noise(-8, 8) * scale;
-                ctx.quadraticCurveTo(x + offset, y + dy + amp, x + 22 * scale, y + dy);
-               // ctx.stroke();
+                // Add 1–2 soft glow "highlights"
+                for (let i = 0; i < 2; i++) {
+                    const yy = y + this.noise(10, 40) * scale;
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.12)`;
+                    ctx.lineWidth = 1 * scale;
+                    ctx.lineCap = "round";
+                    ctx.beginPath();
+                    ctx.moveTo(x - 20 * scale, yy);
+                    ctx.lineTo(x + 20 * scale, yy);
+                    // ctx.stroke();
+                }
             }
-            for (let i = 0; i < 2; i++) {
-                const yy = y + this.noise(10, 40) * scale;
-                ctx.strokeStyle = `rgba(255, 255, 255, 0.12)`;
-                ctx.lineWidth = 3 * scale;
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.moveTo(x - 20 * scale, yy);
-                ctx.lineTo(x + 20 * scale, yy);
-                ctx.stroke();
-            }
-        }
-
-        else if (biomeId === "forest") {
+        } else if (biomeId === "forest") {
             for (let i = 0; i < 15; i++) {
                 const rx = x + this.noise(-24, 24) * scale;
                 const ry = y + this.noise(-24, 24) * scale;
@@ -419,12 +420,19 @@ class ParchmentOverlay {
                 ctx.arc(rx, ry, dotSize, 0, Math.PI * 2);
                 ctx.fill();
             }
-        }
-
-        else if (biomeId === "spire") {
+        } else if (biomeId === "spire") {
             for (let i = 0; i < 3; i++) {
-                const dy = -8* scale + i * 15 * scale;
+                const dy = -16 * scale + i * 15 * scale;
                 ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
+
+                const baseMin = 0.3;
+                const baseMax = 0.7;
+
+                const noiseScale = 0.015;
+                const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
+                const alpha = this.lerp(baseMin, baseMax, n) * 0.4;
+                ctx.strokeStyle = `rgba(100, 100, 100, ${alpha})`;
+
                 ctx.lineWidth = 2 * scale;
                 const startX = x - 20 * scale + this.noise(0, 9) * scale;
                 const endX = x + 5 * scale + this.noise(0, 15) * scale;
@@ -438,9 +446,7 @@ class ParchmentOverlay {
                 ctx.lineTo(endX, y + dy);
                 ctx.stroke();
             }
-        }
-
-        else if (biomeId === "barrens") {
+        } else if (biomeId === "barrens") {
             for (let i = 0; i < 7; i++) {
                 const rx = x + this.noise(-24, 24) * scale;
                 const ry = y + this.noise(-24, 24) * scale;
@@ -461,42 +467,26 @@ class ParchmentOverlay {
                 ctx.fill();
                 ctx.restore();
             }
-        }
-    }
-
-    // 🎨 Noise & Math
-    fbm(x, y, octaves = 3, persistence = 0.5) {
-        let value = 0, amplitude = 1, frequency = 1, max = 0;
-        for (let i = 0; i < octaves; i++) {
-            value += this.simplex2(x * frequency, y * frequency) * amplitude;
-            max += amplitude;
-            amplitude *= persistence;
-            frequency *= 2;
-        }
-        return (value / max + 1) / 2; // 0–1
-    }
-
-    simplex2(x, y) {
-        const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-        return (n - Math.floor(n)) * 2 - 1; // -1 to 1
-    }
-
-    findClosestSite(sites, x, y) {
-        let best = sites[0];
-        let bestDist = Infinity;
-        for (const site of sites) {
-            const dx = site.x - x;
-            const dy = site.y - y;
-            const d = dx * dx + dy * dy;
-            if (d < bestDist) {
-                best = site;
-                bestDist = d;
+        } else if (biomeId === "meadow") {
+            const windLean = this.noise(-5, 5) * scale;
+            for (let i = 0; i < 7; i++) {
+                const dx = 10 * scale + i * 15 * scale;
+                const startY = y + this.noise(0, 38) * scale;
+                const length = 2 + this.noise(0, 7);
+                const endY = startY + length * scale;
+                const controlY = startY + (length / 2) * scale;
+                const amp = this.noise(-2, 2) * scale;
+                const offset = this.noise(-2, 2) * scale;
+                ctx.strokeStyle = `rgba(60, 130, 60, ${0.2 + this.noise(0, 0.3)})`;
+                ctx.lineWidth = 0.5 * scale;
+                ctx.beginPath();
+                ctx.moveTo(x + dx, startY);
+                ctx.quadraticCurveTo(x + dx + windLean + amp, controlY + offset, x + dx + windLean, endY);
+                ctx.stroke();
             }
         }
-        return best;
     }
 
-    // 📜 Paper texture
     addParchmentTexture() {
         const scale = this.renderScale || 1;
         const texSize = 512 * scale;
@@ -508,6 +498,7 @@ class ParchmentOverlay {
         texCtx.fillStyle = "#e7c496";
         texCtx.fillRect(0, 0, texSize, texSize);
 
+        // Grain
         const dotCount = 1000 * scale;
         for (let i = 0; i < dotCount; i++) {
             const x = this.noise(0, texSize);
@@ -519,13 +510,14 @@ class ParchmentOverlay {
             texCtx.fill();
         }
 
+        // Fibers
         const fiberCount = 60 * scale;
         for (let i = 0; i < fiberCount; i++) {
             const x1 = this.noise(0, texSize);
             const y1 = this.noise(0, texSize);
             const x2 = x1 + this.noise(0, 200 * scale);
             const y2 = y1 + this.noise(0, 200 * scale);
-            texCtx.strokeStyle = `rgba(200, 180, 150, 0.3)`;
+            texCtx.strokeStyle = `rgba(200, 180, 150, 0.4)`;
             texCtx.lineWidth = 0.4 * scale;
             texCtx.beginPath();
             texCtx.moveTo(x1, y1);
@@ -540,7 +532,6 @@ class ParchmentOverlay {
         this.ctx.globalAlpha = 1.0;
     }
 
-    // ✏️ Hand-drawn border
     drawHandDrawnBorder(ctx, width, height) {
         ctx.save();
         ctx.strokeStyle = "rgba(100, 90, 80, 0.2)";
@@ -567,39 +558,43 @@ class ParchmentOverlay {
         ctx.restore();
     }
 
-    // 🌫️ Soft biome borders
-    drawBiomeBleedBorders(ctx, sites) {
-        const w = this.width;
-        const h = this.height;
-        const canvasWidth = this.canvas.width;
-        const canvasHeight = this.canvas.height;
-        const step = 4;
+    // Simple 2D fBm (fractal Brownian motion)
+    fbm(x, y, octaves = 3, persistence = 0.5) {
+        let value = 0;
+        let amplitude = 1;
+        let frequency = 1;
+        let max = 0;
+        for (let i = 0; i < octaves; i++) {
+            value += this.simplex2(x * frequency, y * frequency) * amplitude;
+            max += amplitude;
+            amplitude *= persistence;
+            frequency *= 2;
+        }
+        return value / max;
+    }
 
-        ctx.save();
-        ctx.globalCompositeOperation = "multiply";
-        ctx.globalAlpha = 0.15;
+    // Very simple 2D value noise (approximate simplex)
+    simplex2(x, y) {
+        const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+        return (n - Math.floor(n)) * 2 - 1; // -1 to 1
+    }
 
-        for (let y = step / 2; y < canvasHeight; y += step) {
-            for (let x = step / 2; x < canvasWidth; x += step) {
-                const site = this.findClosestSite(sites, x, y);
-                const { col, row } = site;
-                if (row < 0 || row >= h || col < 0 || col >= w) continue;
-
-                const neighbors = [[col-1,row],[col+1,row],[col,row-1],[col,row+1]];
-                const isEdge = neighbors.some(([nx, ny]) => {
-                    if (nx < 0 || ny < 0 || nx >= w || ny >= h) return false;
-                    return this.mapData[ny][nx] !== this.mapData[row][col];
-                });
-
-                if (isEdge) {
-                    const color = this.biomeColors[this.mapData[row][col]];
-                    if (!color) continue;
-                    const alpha = this.noise(0.2, 0.4);
-                    ctx.fillStyle = `rgba(80, 70, 60, ${alpha})`;
-                   ctx.fillRect(x - 1, y - 1, 2, 2);
-                }
+    findClosestSite(sites, x, y) {
+        let best = sites[0];
+        let bestDist = Infinity;
+        for (const site of sites) {
+            const dx = site.x - x;
+            const dy = site.y - y;
+            const d = dx * dx + dy * dy;
+            if (d < bestDist) {
+                best = site;
+                bestDist = d;
             }
         }
-        ctx.restore();
+        return best;
+    }
+
+    setMapData(grid) {
+        this.mapData = grid.map((row) => row.map((cell) => cell.terrain));
     }
 }
