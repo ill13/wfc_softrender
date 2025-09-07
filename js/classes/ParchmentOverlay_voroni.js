@@ -1,5 +1,5 @@
 // js/classes/ParchmentOverlay.js
-// 🎨 Watercolor/Painterly Style Parchment Overlay
+// voroni style
 class ParchmentOverlay {
     constructor(width, height, themeName, seed) {
         this.width = width;
@@ -9,17 +9,16 @@ class ParchmentOverlay {
         this.canvas = null;
         this.ctx = null;
         this.biomeColors = {};
-        this.biomeOrder = [];
+        this.biomeOrder = []; // Drawing order: last = topmost
         this.theme = null;
         this.mapData = null;
-        this.renderScale = 1;
-        this.tileSizeBase = 48;
 
-        // Deterministic PRNG
+        // Seed random with provided seed
         this.seedRandom = this.makeSeededRandom(seed);
     }
 
     makeSeededRandom(seed) {
+        // Deterministic PRNG
         let s = (seed || 1) * 0x2f6e2b;
         return () => {
             s = (s * 0x41c64e6d + 12345) >>> 0;
@@ -31,18 +30,11 @@ class ParchmentOverlay {
         return this.seedRandom() * (max - min) + min;
     }
 
-    // Linear interpolation helper
-    lerp(a, b, t) {
-        return a + (b - a) * t;
-    }
-
-    // Map value from one range to another
-    map(value, inMin, inMax, outMin, outMax) {
-        return ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
-    }
-
+    // Initialize from theme JSON
     initFromTheme(theme) {
         this.theme = theme;
+
+        // Extract and map colors
         this.biomeColors = {};
         Object.keys(theme.elevation).forEach((id) => {
             const visual = theme.elevation[id];
@@ -51,21 +43,18 @@ class ParchmentOverlay {
                 r: color.r,
                 g: color.g,
                 b: color.b,
-                alpha: 0.75,
+                alpha: 0.8,
             };
         });
 
-        // 💧 OVERRIDE: Boost water presence
-    if (this.biomeColors.water) {
-        // Richer teal-blue, slightly desaturated for painterly feel
-        this.biomeColors.water.r = 80;   // was likely ~150+
-        this.biomeColors.water.g = 140;  // more green-blue
-        this.biomeColors.water.b = 255;  // deeper sky blue
-        this.biomeColors.water.alpha = 1; // stronger presence
-    }
-
-
-        this.biomeOrder = ["barrens", "water", "meadow", "forest", "spire"].filter((id) => this.biomeColors[id]);
+        // Define layer order: Mountains on top, Barrens on bottom
+        this.biomeOrder = [
+            "barrens", // bottom
+            "water",
+            "meadow",
+            "forest",
+            "spire", // top
+        ].filter((id) => this.biomeColors[id]); // Only include existing biomes
     }
 
     parseColor(hex) {
@@ -73,8 +62,12 @@ class ParchmentOverlay {
             return { r: 100, g: 100, b: 100 };
         }
         let h = hex.slice(1);
-        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-        if (h.length !== 6) return { r: 100, g: 100, b: 100 };
+        if (h.length === 3) {
+            h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; // #777 → #777777
+        }
+        if (h.length !== 6) {
+            return { r: 100, g: 100, b: 100 };
+        }
         return {
             r: parseInt(h.slice(0, 2), 16) || 100,
             g: parseInt(h.slice(2, 4), 16) || 100,
@@ -82,9 +75,15 @@ class ParchmentOverlay {
         };
     }
 
+    // Set map data (from WFC.grid after collapse)
+    setMapData(grid) {
+        this.mapData = grid.map((row) => row.map((cell) => cell.terrain));
+    }
+
+    // Create and prep canvas
     createCanvas() {
         const tileSizeBase = Math.min(48, 600 / Math.max(this.width, this.height));
-        const scale = 2;
+        const scale = 2; // High-res render
         const canvasWidth = this.width * tileSizeBase * scale;
         const canvasHeight = this.height * tileSizeBase * scale;
 
@@ -99,19 +98,24 @@ class ParchmentOverlay {
         this.canvas.style.display = "block";
         this.canvas.style.margin = "0 auto";
         this.canvas.style.outline = "";
-        this.canvas.style.imageRendering = "auto";
+
+        // 🔍 Key: display at 1x, let browser smooth it
+        this.canvas.style.imageRendering = "auto"; // Smooth downscale
         this.canvas.style.width = `${this.width * tileSizeBase}px`;
         this.canvas.style.height = `${this.height * tileSizeBase}px`;
 
         this.ctx = this.canvas.getContext("2d");
         this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = "high";
+        this.ctx.imageSmoothingQuality = "high"; // Use high-quality downscaling
 
+        // Export scale for use in render
         this.renderScale = scale;
         this.tileSizeBase = tileSizeBase;
+
         return this.canvas;
     }
 
+    // Main render function — now with Voronoi-style soft regions!
     render() {
         if (!this.ctx || !this.mapData) return;
 
@@ -124,32 +128,51 @@ class ParchmentOverlay {
         // Clear
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        // Base parchment
+        // Parchment base
         ctx.fillStyle = "#f0cb9bff";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Generate soft sites (cell centers with jitter)
+        // Generate Voronoi-like sites (deterministic)
         const sites = this.computeVoronoiSites(canvasWidth, canvasHeight, w, h);
 
-        // Draw biomes in order using brushstrokes and soft washes
+        // Draw each biome in layer order
         this.biomeOrder.forEach((biomeId) => {
-            const color = this.biomeColors[biomeId];
-            if (!color) return;
-
             ctx.save();
+            ctx.globalAlpha = 0.85;
             ctx.globalCompositeOperation = "source-over";
-            ctx.globalAlpha = 0.8;
 
-            this.drawBiomeWatercolorWash(ctx, sites, biomeId, color, canvasWidth, canvasHeight);
-            this.drawBiomeBrushstrokes(ctx, sites, biomeId, color, canvasWidth, canvasHeight);
+            // Sample every 2px for soft field
+            const step = 4;
+            for (let y = step / 2; y < canvasHeight; y += step) {
+                for (let x = step / 2; x < canvasWidth; x += step) {
+                    const site = this.findClosestSite(sites, x, y);
+                    const { col, row } = site;
+
+                    // Bounds check and biome match
+                    if (row >= 0 && row < h && col >= 0 && col < w && this.mapData[row][col] === biomeId) {
+                        const color = this.biomeColors[biomeId];
+                        if (!color) continue;
+
+                        // Soft radial glow
+                        const somenum = 24;
+                        const radius = somenum + this.noise(-(somenum / 4), somenum / 8); // slight variation
+                        const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                        grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${color.alpha * 0.3})`);
+                        grad.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+                    }
+                }
+            }
+
+            // Draw soft borders only around mountain (spire) regions
+            //this.drawMountainOutline(sites);
             ctx.restore();
         });
 
-        // Add soft biome borders (wet-edge bleed)
-        this.drawBiomeBleedBorders(ctx, sites);
-
-        // Draw biome-specific doodles at centers
-        const size = canvasWidth / this.width;
+        // Draw biome-specific art at cell centers
+        const size = canvasWidth / this.width; // nominal tile size
         sites.forEach((site) => {
             const { col, row } = site;
             if (row >= h || col >= w || row < 0 || col < 0) return;
@@ -158,124 +181,53 @@ class ParchmentOverlay {
             this.drawBiomeArtAt(site.x, site.y, biomeId, size);
         });
 
-        // Add paper texture with multiply blend
-        this.addParchmentTexture();
+        // Draw soft borders between biomes
+        //this.drawBiomeBorders(sites);
+        // Add parchment texture on top
+       // this.addParchmentTexture();
 
-        // Final soft border (hand-drawn ink)
-        this.drawHandDrawnBorder(ctx, canvasWidth, canvasHeight);
-
-        // Reset
+        // Reset state
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = "source-over";
     }
 
+    // Generate sites with seeded jitter
     computeVoronoiSites(canvasWidth, canvasHeight, cols, rows) {
         const sites = [];
         const dx = canvasWidth / cols;
         const dy = canvasHeight / rows;
+        const rand = () => this.seedRandom();
+
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const x = (col + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dx;
-                const y = (row + 0.5 + this.noise(-0.5, 0.5) * 0.6) * dy;
+                const x = (col + 0.5 + (rand() - 0.5) * 0.7) * dx;
+                const y = (row + 0.5 + (rand() - 0.5) * 0.7) * dy;
                 sites.push({ x, y, col, row });
             }
         }
         return sites;
     }
 
-    drawBiomeWatercolorWash(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
-    const step = 6;
-    const noiseScale = 0.015;
-
-    // Use slightly higher alpha range for water
-    const baseMin = biomeId === "water" ? 0.4 : 0.3;
-    const baseMax = biomeId === "water" ? 0.7 : 0.6;
-
-    for (let y = 0; y < canvasHeight; y += step) {
-        for (let x = 0; x < canvasWidth; x += step) {
-            const site = this.findClosestSite(sites, x, y);
-            const { col, row } = site;
-            if (row >= 0 && row < this.height && col >= 0 && col < this.width && this.mapData[row][col] === biomeId) {
-                const n = this.fbm(x * noiseScale, y * noiseScale, 2, 0.6);
-                const alpha = this.lerp(baseMin, baseMax, n) * color.alpha;
-                ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
-                ctx.fillRect(x, y, step, step);
+    // Brute-force closest site (fine for small grids)
+    findClosestSite(sites, x, y) {
+        let best = sites[0];
+        let bestDist = Infinity;
+        for (const site of sites) {
+            const dx = site.x - x;
+            const dy = site.y - y;
+            const d = dx * dx + dy * dy;
+            if (d < bestDist) {
+                best = site;
+                bestDist = d;
             }
         }
-    }
-}
-
-    drawBiomeBrushstrokes(ctx, sites, biomeId, color, canvasWidth, canvasHeight) {
-        const strokeCount = this.width * this.height * 0.8;
-        for (let i = 0; i < strokeCount; i++) {
-            const site = sites[Math.floor(this.noise(0, sites.length))];
-            const { col, row } = site;
-            if (row >= this.height || col >= this.width || this.mapData[row][col] !== biomeId) continue;
-
-            const x = site.x + this.noise(-20, 20);
-            const y = site.y + this.noise(-20, 20);
-            const angle = this.noise(0, Math.PI * 2);
-            const length = this.noise(6, 14) * (this.renderScale || 1);
-            const width = this.noise(1.5, 3.5);
-            const alpha = this.noise(0.3, 0.55);
-
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-            ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
-            ctx.lineWidth = width;
-            ctx.lineCap = "round";
-            ctx.beginPath();
-            ctx.moveTo(-length / 2, this.noise(-2, 2));
-            ctx.quadraticCurveTo(0, this.noise(-1, 1), length / 2, this.noise(-2, 2));
-            ctx.stroke();
-            ctx.restore();
-        }
+        return best;
     }
 
-    drawBiomeBleedBorders(ctx, sites) {
-        const w = this.width;
-        const h = this.height;
-        const canvasWidth = this.canvas.width;
-        const canvasHeight = this.canvas.height;
-        const step = 4;
-
-        ctx.save();
-        ctx.globalCompositeOperation = "multiply";
-        ctx.globalAlpha = 0.15;
-
-        for (let y = step / 2; y < canvasHeight; y += step) {
-            for (let x = step / 2; x < canvasWidth; x += step) {
-                const site = this.findClosestSite(sites, x, y);
-                const { col, row } = site;
-                if (row < 0 || row >= h || col < 0 || col >= w) continue;
-
-                const neighbors = [
-                    [col - 1, row],
-                    [col + 1, row],
-                    [col, row - 1],
-                    [col, row + 1],
-                ];
-                const isEdge = neighbors.some(([nx, ny]) => {
-                    if (nx < 0 || ny < 0 || nx >= w || ny >= h) return false;
-                    return this.mapData[ny][nx] !== this.mapData[row][col];
-                });
-
-                if (isEdge) {
-                    const color = this.biomeColors[this.mapData[row][col]];
-                    if (!color) continue;
-                    const alpha = this.noise(0.2, 0.4);
-                    ctx.fillStyle = `rgba(80, 70, 60, ${alpha})`; // warm ink bleed
-                    ctx.fillRect(x - 1, y - 1, 2, 2);
-                }
-            }
-        }
-        ctx.restore();
-    }
-
+    // Draw biome art centered at (x, y)
     drawBiomeArtAt(x, y, biomeId, size) {
         const ctx = this.ctx;
-        const scale = size / 48;
+        const scale = size / 48; // normalize to 48px base
 
         if (biomeId === "water") {
             for (let i = 0; i < 3; i++) {
@@ -288,18 +240,6 @@ class ParchmentOverlay {
                 const offset = this.noise(-10, 10) * scale;
                 ctx.quadraticCurveTo(x + offset, y + dy + amp, x + 20 * scale, y + dy);
                 // ctx.stroke();
-
-                // Add 1–2 soft glow "highlights"
-                for (let i = 0; i < 2; i++) {
-                    const yy = y + this.noise(10, 40) * scale;
-                    ctx.strokeStyle = `rgba(255, 255, 255, 0.12)`;
-                    ctx.lineWidth = 1 * scale;
-                    ctx.lineCap = "round";
-                    ctx.beginPath();
-                    ctx.moveTo(x - 20 * scale, yy);
-                    ctx.lineTo(x + 20 * scale, yy);
-                   // ctx.stroke();
-                }
             }
         } else if (biomeId === "forest") {
             for (let i = 0; i < 15; i++) {
@@ -359,7 +299,7 @@ class ParchmentOverlay {
                 const controlY = startY + (length / 2) * scale;
                 const amp = this.noise(-2, 2) * scale;
                 const offset = this.noise(-2, 2) * scale;
-                ctx.strokeStyle = `rgba(60, 130, 60, ${0.2 + this.noise(0, 0.3)})`;
+                ctx.strokeStyle = `rgba(60, 130, 60, ${0.7 + this.noise(0, 0.6)})`;
                 ctx.lineWidth = 0.5 * scale;
                 ctx.beginPath();
                 ctx.moveTo(x + dx, startY);
@@ -369,114 +309,177 @@ class ParchmentOverlay {
         }
     }
 
+    drawMountainOutline(sites) {
+        const ctx = this.ctx;
+        const w = this.width;
+        const h = this.height;
+
+        // Step 1: Collect all spire sites
+        const spireSites = sites.filter((site) => {
+            const { col, row } = site;
+            return row >= 0 && row < h && col >= 0 && col < w && this.mapData[row][col] === "spire";
+        });
+
+        if (spireSites.length === 0) return;
+
+        // Step 2: Get convex hull
+        const hull = this.convexHull(spireSites);
+        if (hull.length < 2) return;
+
+        // Step 3: Draw soft, wobbly outline
+        const noise = (min, max) => this.seedRandom() * (max - min) + min;
+
+        // First stroke: soft dark
+        ctx.strokeStyle = "rgba(80, 80, 80, 0.1)";
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.beginPath();
+        for (let i = 0; i < hull.length; i++) {
+            const p = hull[i];
+            const x = p.x + noise(-6, 6);
+            const y = p.y + noise(-6, 6);
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                const midX = (hull[i - 1].x + p.x) / 2 + noise(-4, 4);
+                const midY = (hull[i - 1].y + p.y) / 2 + noise(-4, 4);
+                ctx.quadraticCurveTo(midX, midY, x, y);
+            }
+        }
+        if (hull.length > 2) ctx.closePath();
+        ctx.stroke();
+
+        // Second stroke: warm ink bleed
+        ctx.strokeStyle = "rgba(100, 90, 80, 0.15)";
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        for (let i = 0; i < hull.length; i++) {
+            const p = hull[i];
+            const x = p.x + noise(-4, 4);
+            const y = p.y + noise(-4, 4);
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                const midX = (hull[i - 1].x + p.x) / 2 + noise(-3, 3);
+                const midY = (hull[i - 1].y + p.y) / 2 + noise(-3, 3);
+                ctx.quadraticCurveTo(midX, midY, x, y);
+            }
+        }
+        if (hull.length > 2) ctx.closePath();
+        ctx.stroke();
+    }
+
+    // Safe version that doesn't crash on null points
+    convexHull(points) {
+        if (points.length < 3) {
+            // If 1 or 2 points, just return them
+            return [...points];
+        }
+
+        // Sort points lexicographically (by x, then y)s
+        const sorted = [...points].sort((a, b) => {
+            if (a.x !== b.x) return a.x - b.x;
+            return a.y - b.y;
+        });
+
+        const hull = [];
+        let pointOnHull = sorted[0]; // leftmost point
+
+        do {
+            hull.push(pointOnHull);
+
+            let endpoint = sorted[0];
+            for (const p of sorted) {
+                // Find the point that makes the largest counterclockwise angle
+                if (endpoint === pointOnHull || this.isLeftOrCollinear(pointOnHull, endpoint, p)) {
+                    endpoint = p;
+                }
+            }
+
+            pointOnHull = endpoint;
+
+            // Avoid infinite loops (if stuck)
+            if (hull.length > sorted.length) break;
+        } while (pointOnHull !== hull[0]);
+
+        return hull;
+    }
+
+    // Returns true if point C is to the left of line AB, or collinear and beyond
+    isLeftOrCollinear(A, B, C) {
+        const cross = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x);
+        if (cross > 0) return false; // C is to the left → we want it
+        if (cross < 0) return true; // C is to the right → skip
+        // Collinear: check if C is further along the line than B
+        const dot = (B.x - A.x) * (C.x - B.x) + (B.y - A.y) * (C.y - B.y);
+        return dot >= 0;
+    }
+
+    angleBetween(a, b, c) {
+        // Angle at b between vectors ba and bc
+        const ba = { x: a.x - b.x, y: a.y - b.y };
+        const bc = { x: c.x - b.x, y: c.y - b.y };
+
+        const dot = ba.x * bc.x + ba.y * bc.y;
+        const magBa = Math.sqrt(ba.x * ba.x + ba.y * ba.y);
+        const magBc = Math.sqrt(bc.x * bc.x + bc.y * bc.y);
+
+        if (magBa === 0 || magBc === 0) return 0;
+
+        const cosAngle = dot / (magBa * magBc);
+        const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+
+        // Return angle in radians
+        return angle;
+    }
+
     addParchmentTexture() {
         const scale = this.renderScale || 1;
         const texSize = 512 * scale;
+
         const texCanvas = document.createElement("canvas");
         texCanvas.width = texSize;
         texCanvas.height = texSize;
         const texCtx = texCanvas.getContext("2d");
 
+        // Base parchment
         texCtx.fillStyle = "#e7c496";
         texCtx.fillRect(0, 0, texSize, texSize);
 
-        // Grain
-        const dotCount = 1000 * scale;
+        // Grain dots — more at high-res
+        const dotCount = scale === 1 ? 1000 : 1000 * scale;
         for (let i = 0; i < dotCount; i++) {
-            const x = this.noise(0, texSize);
-            const y = this.noise(0, texSize);
+            const x = Math.floor(this.noise(0, texSize));
+            const y = Math.floor(this.noise(0, texSize));
             const r = this.noise(0.5, 2) * scale;
-            texCtx.fillStyle = `rgba(200, 180, 150, ${this.noise(0, 0.15)})`;
+            texCtx.fillStyle = `rgba(200, 180, 150, ${this.noise(0, 0.1)})`;
             texCtx.beginPath();
             texCtx.arc(x, y, r, 0, Math.PI * 2);
             texCtx.fill();
         }
 
-        // Fibers
-        const fiberCount = 60 * scale;
+        // Fibers — scale length and count
+        const fiberCount = scale === 1 ? 50 : 50 * scale;
         for (let i = 0; i < fiberCount; i++) {
             const x1 = this.noise(0, texSize);
             const y1 = this.noise(0, texSize);
             const x2 = x1 + this.noise(0, 200 * scale);
             const y2 = y1 + this.noise(0, 200 * scale);
-            texCtx.strokeStyle = `rgba(200, 180, 150, 0.4)`;
-            texCtx.lineWidth = 0.4 * scale;
+            texCtx.strokeStyle = `rgba(200, 180, 150, 1)`;
+            texCtx.lineWidth = 0.5 * scale;
             texCtx.beginPath();
             texCtx.moveTo(x1, y1);
             texCtx.lineTo(x2, y2);
             texCtx.stroke();
         }
 
-        this.ctx.globalAlpha = 0.4;
+        this.ctx.globalAlpha = 0.51;
         this.ctx.globalCompositeOperation = "multiply";
         this.ctx.drawImage(texCanvas, 0, 0, this.canvas.width, this.canvas.height);
         this.ctx.globalCompositeOperation = "source-over";
         this.ctx.globalAlpha = 1.0;
-    }
-
-    drawHandDrawnBorder(ctx, width, height) {
-        ctx.save();
-        ctx.strokeStyle = "rgba(100, 90, 80, 0.2)";
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = "round";
-        const pad = 10;
-        const points = [
-            { x: pad, y: pad },
-            { x: width - pad, y: pad },
-            { x: width - pad, y: height - pad },
-            { x: pad, y: height - pad },
-        ];
-
-        ctx.beginPath();
-        for (let i = 0; i < 4; i++) {
-            const a = points[i];
-            const b = points[(i + 1) % 4];
-            const mx = (a.x + b.x) / 2 + this.noise(-8, 8);
-            const my = (a.y + b.y) / 2 + this.noise(-8, 8);
-            if (i === 0) ctx.moveTo(a.x + this.noise(-5, 5), a.y + this.noise(-5, 5));
-            ctx.quadraticCurveTo(mx, my, b.x + this.noise(-5, 5), b.y + this.noise(-5, 5));
-        }
-        ctx.stroke();
-        ctx.restore();
-    }
-
-    // Simple 2D fBm (fractal Brownian motion)
-    fbm(x, y, octaves = 3, persistence = 0.5) {
-        let value = 0;
-        let amplitude = 1;
-        let frequency = 1;
-        let max = 0;
-        for (let i = 0; i < octaves; i++) {
-            value += this.simplex2(x * frequency, y * frequency) * amplitude;
-            max += amplitude;
-            amplitude *= persistence;
-            frequency *= 2;
-        }
-        return value / max;
-    }
-
-    // Very simple 2D value noise (approximate simplex)
-    simplex2(x, y) {
-        const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-        return (n - Math.floor(n)) * 2 - 1; // -1 to 1
-    }
-
-    findClosestSite(sites, x, y) {
-        let best = sites[0];
-        let bestDist = Infinity;
-        for (const site of sites) {
-            const dx = site.x - x;
-            const dy = site.y - y;
-            const d = dx * dx + dy * dy;
-            if (d < bestDist) {
-                best = site;
-                bestDist = d;
-            }
-        }
-        return best;
-    }
-
-    setMapData(grid) {
-        this.mapData = grid.map((row) => row.map((cell) => cell.terrain));
     }
 }
