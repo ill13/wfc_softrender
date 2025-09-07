@@ -83,7 +83,7 @@ class ParchmentOverlay {
     // Create and prep canvas
     createCanvas() {
         const tileSizeBase = Math.min(48, 600 / Math.max(this.width, this.height));
-        const scale = 1; // High-res render
+        const scale = 2; // High-res render
         const canvasWidth = this.width * tileSizeBase * scale;
         const canvasHeight = this.height * tileSizeBase * scale;
 
@@ -154,7 +154,7 @@ class ParchmentOverlay {
                         if (!color) continue;
 
                         // Soft radial glow
-                        const somenum = 32;
+                        const somenum = 6;
                         const radius = somenum + this.noise(-(somenum / 4), somenum / 8); // slight variation
                         const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
                         grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${color.alpha * 0.7})`);
@@ -167,7 +167,7 @@ class ParchmentOverlay {
             }
 
             // Draw soft borders only around mountain (spire) regions
-            this.drawMountainOutlines(sites);
+            this.drawMountainOutline(sites);
             ctx.restore();
         });
 
@@ -309,129 +309,123 @@ class ParchmentOverlay {
         }
     }
 
-    // Add this method to your class
-    drawMountainOutline(sites) {
-        const ctx = this.ctx;
-        const w = this.width;
-        const h = this.height;
 
-        // Step 1: Collect all spire sites
-        const spireSites = sites.filter((site) => {
-            const { col, row } = site;
-            return row >= 0 && row < h && col >= 0 && col < w && this.mapData[row][col] === "spire";
-        });
 
-        if (spireSites.length === 0) return;
+drawMountainOutline(sites) {
+    const ctx = this.ctx;
+    const w = this.width;
+    const h = this.height;
 
-        // Step 2: Find the convex hull (simplified gift wrapping)
-        const hull = this.convexHull(spireSites);
-        if (hull.length < 3) return; // Need at least 3 points
+    // Step 1: Collect all spire sites
+    const spireSites = sites.filter(site => {
+        const { col, row } = site;
+        return row >= 0 && row < h && col >= 0 && col < w && this.mapData[row][col] === "spire";
+    });
 
-        // Step 3: Draw a soft, wobbly outline around the hull
-        ctx.strokeStyle = "rgba(80, 80, 80, 0.1)";
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+    if (spireSites.length === 0) return;
 
-        // Add noise to make it feel hand-drawn
-        const noise = (min, max) => this.seedRandom() * (max - min) + min;
+    // Step 2: Get convex hull
+    const hull = this.convexHull(spireSites);
+    if (hull.length < 2) return;
 
-        ctx.beginPath();
-        let lastX, lastY;
+    // Step 3: Draw soft, wobbly outline
+    const noise = (min, max) => this.seedRandom() * (max - min) + min;
 
-        hull.forEach((point, i) => {
-            const x = point.x;
-            const y = point.y;
+    // First stroke: soft dark
+    ctx.strokeStyle = "rgba(80, 80, 80, 0.1)";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
-            // Wobble the line slightly
-            const dx = noise(-6, 6);
-            const dy = noise(-6, 6);
+    ctx.beginPath();
+    for (let i = 0; i < hull.length; i++) {
+        const p = hull[i];
+        const x = p.x + noise(-6, 6);
+        const y = p.y + noise(-6, 6);
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            const midX = (hull[i - 1].x + p.x) / 2 + noise(-4, 4);
+            const midY = (hull[i - 1].y + p.y) / 2 + noise(-4, 4);
+            ctx.quadraticCurveTo(midX, midY, x, y);
+        }
+    }
+    if (hull.length > 2) ctx.closePath();
+    ctx.stroke();
 
-            if (i === 0) {
-                ctx.moveTo(x + dx, y + dy);
-                lastX = x + dx;
-                lastY = y + dy;
-            } else {
-                // Smooth curve between points
-                const midX = (lastX + x) / 2;
-                const midY = (lastY + y) / 2;
-                const cx = midX + noise(-4, 4);
-                const cy = midY + noise(-4, 4);
+    // Second stroke: warm ink bleed
+    ctx.strokeStyle = "rgba(100, 90, 80, 0.15)";
+    ctx.lineWidth = 1.5;
 
-                ctx.quadraticCurveTo(cx, cy, x + dx, y + dy);
-                lastX = x + dx;
-                lastY = y + dy;
-            }
-        });
+    ctx.beginPath();
+    for (let i = 0; i < hull.length; i++) {
+        const p = hull[i];
+        const x = p.x + noise(-4, 4);
+        const y = p.y + noise(-4, 4);
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            const midX = (hull[i - 1].x + p.x) / 2 + noise(-3, 3);
+            const midY = (hull[i - 1].y + p.y) / 2 + noise(-3, 3);
+            ctx.quadraticCurveTo(midX, midY, x, y);
+        }
+    }
+    if (hull.length > 2) ctx.closePath();
+    ctx.stroke();
+}
 
-        // Close the loop
-        ctx.closePath();
-        ctx.stroke();
 
-        // Optional: second fainter stroke for ink bleed
-        ctx.strokeStyle = "rgba(100, 90, 80, 0.15)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        hull.forEach((point, i) => {
-            const x = point.x;
-            const y = point.y;
-            const dx = noise(-4, 4);
-            const dy = noise(-4, 4);
-            if (i === 0) {
-                ctx.moveTo(x + dx, y + dy);
-            } else {
-                const midX = (lastX + x) / 2;
-                const midY = (lastY + y) / 2;
-                const cx = midX + noise(-3, 3);
-                const cy = midY + noise(-3, 3);
-                ctx.quadraticCurveTo(cx, cy, x + dx, y + dy);
-            }
-            lastX = x + dx;
-            lastY = y + dy;
-        });
-        ctx.closePath();
-        ctx.stroke();
+
+// Safe version that doesn't crash on null points
+convexHull(points) {
+    if (points.length < 3) {
+        // If 1 or 2 points, just return them
+        return [...points];
     }
 
-    convexHull(points) {
-        if (points.length < 3) return [];
+    // Sort points lexicographically (by x, then y)
+    const sorted = [...points].sort((a, b) => {
+        if (a.x !== b.x) return a.x - b.x;
+        return a.y - b.y;
+    });
 
-        // Sort by x, then y
-        const sorted = [...points].sort((a, b) => {
-            if (a.x !== b.x) return a.x - b.x;
-            return a.y - b.y;
-        });
+    const hull = [];
+    let pointOnHull = sorted[0]; // leftmost point
 
-        // Start from leftmost point
-        let hull = [];
-        let current = sorted[0];
-        let prevPoint = null;
+    do {
+        hull.push(pointOnHull);
 
-        while (true) {
-            // Find next point on hull
-            let next = null;
-            let maxAngle = -Infinity;
-
-            for (const p of points) {
-                if (p === current || p === prevPoint) continue;
-
-                const angle = this.angleBetween(current, p, prevPoint);
-                if (angle > maxAngle) {
-                    maxAngle = angle;
-                    next = p;
-                }
+        let endpoint = sorted[0];
+        for (const p of sorted) {
+            // Find the point that makes the largest counterclockwise angle
+            if (
+                endpoint === pointOnHull ||
+                this.isLeftOrCollinear(pointOnHull, endpoint, p)
+            ) {
+                endpoint = p;
             }
-
-            if (!next) break;
-
-            hull.push(current);
-            prevPoint = current;
-            current = next;
         }
 
-        // Return the hull points
-        return hull;
-    }
+        pointOnHull = endpoint;
+
+        // Avoid infinite loops (if stuck)
+        if (hull.length > sorted.length) break;
+
+    } while (pointOnHull !== hull[0]);
+
+    return hull;
+}
+
+// Returns true if point C is to the left of line AB, or collinear and beyond
+isLeftOrCollinear(A, B, C) {
+    const cross = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x);
+    if (cross > 0) return false;  // C is to the left → we want it
+    if (cross < 0) return true;   // C is to the right → skip
+    // Collinear: check if C is further along the line than B
+    const dot = (B.x - A.x) * (C.x - B.x) + (B.y - A.y) * (C.y - B.y);
+    return dot >= 0;
+}
+
 
     angleBetween(a, b, c) {
         // Angle at b between vectors ba and bc
